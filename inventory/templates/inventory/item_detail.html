@@ -11,7 +11,9 @@
     <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary btn-sm">Back to inventory</a>
 </div>
 
-{% if item.is_low_stock %}
+{% if item.is_out_of_stock %}
+    <div class="alert alert-danger py-2">Out of stock.</div>
+{% elif item.is_low_stock %}
     <div class="alert alert-warning py-2">Low stock — at or below the reorder level ({{ item.reorder_level }}).</div>
 {% endif %}
 

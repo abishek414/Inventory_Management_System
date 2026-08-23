@@ -69,7 +69,18 @@ class Item(models.Model):
         return f'{self.name} ({self.sku})'
 
     @property
+    def is_out_of_stock(self):
+        return self.quantity <= 0
+
+    @property
     def is_low_stock(self):
+        """
+        True at or below the reorder level — INCLUDING zero, since zero is
+        the most extreme case of "at or below." Templates check
+        is_out_of_stock first and only fall back to this for the "Low
+        stock" label, so an item that's completely out shows "Out of
+        stock" instead of the more misleading "Low stock."
+        """
         return self.reorder_level > 0 and self.quantity <= self.reorder_level
 
 
