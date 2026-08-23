@@ -94,7 +94,7 @@
                         <td>{{ record.borrowed_at|date:"d M Y" }}</td>
                         <td>{{ record.due_date|date:"d M Y"|default:"—" }}</td>
                         <td>
-                            {% if current_membership.role.can_borrow_items %}
+                            {% if current_membership.role.can_borrow_items and record.borrowed_by == user %}
                                 <a href="{% url 'inventory:return_item' record.id %}" class="btn btn-sm btn-outline-primary">Mark returned</a>
                             {% endif %}
                         </td>

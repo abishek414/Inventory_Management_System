@@ -204,6 +204,10 @@ def return_item(request, record_id):
     )
     item = record.item
 
+    if record.borrowed_by_id != request.user.id:
+        messages.error(request, "Only the person who borrowed this item can mark it returned.")
+        return redirect('inventory:item_detail', item_id=item.id)
+
     if request.method == 'POST':
         form = ReturnForm(request.POST)
         if form.is_valid():
