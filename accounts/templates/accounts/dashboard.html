@@ -20,10 +20,13 @@
         as <strong>{{ current_membership.role.name }}</strong>.
     </p>
     <p class="text-muted">
-        Inventory features (view/add/remove stock, update locations, Excel
-        upload) are built in the next pieces — this dashboard will show a
-        stock overview here once they exist.
+        Adding stock, removing it, updating item locations, and Excel upload
+        are built in the next pieces — for now you can browse whatever's in
+        the inventory.
     </p>
+    {% if current_membership.role.can_view_inventory %}
+        <a href="{% url 'inventory:item_list' %}" class="btn btn-primary btn-sm">View inventory</a>
+    {% endif %}
     {% if current_membership.role.can_manage_users %}
         <a href="{% url 'organizations:manage_members' %}" class="btn btn-outline-secondary btn-sm">Manage members</a>
         <a href="{% url 'organizations:manage_roles' %}" class="btn btn-outline-secondary btn-sm">Manage roles</a>

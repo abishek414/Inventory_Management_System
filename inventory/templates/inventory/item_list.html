@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Inventory — {{ current_organization.name }}</h1>
+
+{% if not items %}
+    <p class="text-muted">
+        No items yet. Add a couple through <code>/admin/</code> for now — a proper
+        "Add item" page is coming in the next piece.
+    </p>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle">
+            <thead>
+                <tr>
+                    <th>SKU</th>
+                    <th>Name</th>
+                    <th>Quantity</th>
+                    <th>Unit</th>
+                    <th>Location</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr class="{% if item.is_low_stock %}table-warning{% endif %}">
+                    <td>{{ item.sku }}</td>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>{{ item.unit }}</td>
+                    <td>{{ item.location|default:"—" }}</td>
+                    <td>
+                        {% if item.is_low_stock %}
+                            <span class="badge bg-warning text-dark">Low stock</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock %}

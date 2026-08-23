@@ -57,7 +57,7 @@ INSTALLED_APPS = [
     # Local apps
     'accounts',
     'organizations',
-    # 'inventory' is added in a later piece of the build.
+    'inventory',
 ]
 
 MIDDLEWARE = [

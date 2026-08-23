@@ -39,6 +39,9 @@
                     {% else %}
                         <a href="{% url 'organizations:create' %}" class="btn btn-outline-light btn-sm me-3">Create organization</a>
                     {% endif %}
+                    {% if current_membership.role.can_view_inventory %}
+                        <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-light btn-sm me-3">Inventory</a>
+                    {% endif %}
                     <span class="navbar-text text-light me-3">{{ user }}</span>
                     <form method="post" action="{% url 'logout' %}" class="d-inline">
                         {% csrf_token %}
