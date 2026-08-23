@@ -51,3 +51,24 @@ def permission_required(perm_name):
         return wrapper
 
     return decorator
+
+
+def admin_required(view_func):
+    """
+    Requires a current organization AND that the current member holds the
+    built-in Admin role specifically — not just anyone with
+    "Manage users". Roles define what everyone else in the organization
+    is allowed to do, so changing them (or handing someone the
+    untouchable Admin role itself) is kept to the Admin alone, even
+    though a manager can otherwise add/edit ordinary members.
+    """
+
+    @wraps(view_func)
+    @organization_required
+    def wrapper(request, *args, **kwargs):
+        if not request.current_membership.role.is_owner_role:
+            messages.error(request, "Only the organization's Admin can do that.")
+            return redirect('dashboard')
+        return view_func(request, *args, **kwargs)
+
+    return wrapper

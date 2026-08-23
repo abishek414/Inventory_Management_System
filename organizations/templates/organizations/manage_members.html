@@ -40,6 +40,8 @@
                     <a href="{% url 'organizations:member_history' member.id %}" class="btn btn-sm btn-outline-secondary">History</a>
                     {% if member.user_id == user.id %}
                         <span class="text-muted small">(you)</span>
+                    {% elif member.role.is_owner_role and not current_membership.role.is_owner_role %}
+                        <span class="text-muted small">Admin</span>
                     {% else %}
                         <a href="{% url 'organizations:edit_member' member.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                     {% endif %}
@@ -50,5 +52,7 @@
     </table>
 </div>
 
-<a href="{% url 'organizations:manage_roles' %}" class="btn btn-outline-secondary btn-sm">Manage roles</a>
+{% if current_membership.role.is_owner_role %}
+    <a href="{% url 'organizations:manage_roles' %}" class="btn btn-outline-secondary btn-sm">Manage roles</a>
+{% endif %}
 {% endblock %}

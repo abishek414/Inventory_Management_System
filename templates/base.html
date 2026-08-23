@@ -45,6 +45,8 @@
                                     {% if current_membership.role.can_manage_users %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li><a class="dropdown-item" href="{% url 'organizations:manage_members' %}">Manage members</a></li>
+                                    {% endif %}
+                                    {% if current_membership.role.is_owner_role %}
                                         <li><a class="dropdown-item" href="{% url 'organizations:manage_roles' %}">Manage roles</a></li>
                                     {% endif %}
                                 </ul>

@@ -46,10 +46,16 @@ class AddMemberForm(BootstrapFormMixin, UserCreationForm):
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'password1', 'password2', 'role')
 
-    def __init__(self, *args, organization=None, **kwargs):
+    def __init__(self, *args, organization=None, can_assign_admin=False, **kwargs):
         super().__init__(*args, **kwargs)
         if organization is not None:
-            self.fields['role'].queryset = organization.roles.all()
+            queryset = organization.roles.all()
+            if not can_assign_admin:
+                # Anyone with "Manage users" can add a member, but only
+                # the Admin can hand out the Admin role itself — everyone
+                # else's dropdown simply never offers it.
+                queryset = queryset.exclude(is_owner_role=True)
+            self.fields['role'].queryset = queryset
 
 
 class EditMembershipForm(BootstrapFormMixin, forms.ModelForm):
@@ -59,8 +65,11 @@ class EditMembershipForm(BootstrapFormMixin, forms.ModelForm):
         model = Membership
         fields = ['role', 'is_active']
 
-    def __init__(self, *args, organization=None, **kwargs):
+    def __init__(self, *args, organization=None, can_assign_admin=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['role'].empty_label = None
         if organization is not None:
-            self.fields['role'].queryset = organization.roles.all()
+            queryset = organization.roles.all()
+            if not can_assign_admin:
+                queryset = queryset.exclude(is_owner_role=True)
+            self.fields['role'].queryset = queryset

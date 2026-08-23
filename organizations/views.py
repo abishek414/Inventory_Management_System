@@ -2,7 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .decorators import permission_required
+from .decorators import admin_required, permission_required
 from .forms import AddMemberForm, CreateOrganizationForm, CreateRoleForm, EditMembershipForm
 from .models import Membership, Role
 
@@ -65,13 +65,20 @@ def switch_organization(request, org_id):
     return redirect('dashboard')
 
 
-@permission_required('can_manage_users')
+@admin_required
 def manage_roles(request):
+    """
+    Only the Admin can view/manage roles — not just anyone with "Manage
+    users". Roles define what every member (including other managers) is
+    allowed to do, so the power to create or edit one is kept to the one
+    role that's already structurally guaranteed to always exist and
+    always have full access.
+    """
     roles = request.current_organization.roles.all()
     return render(request, 'organizations/manage_roles.html', {'roles': roles})
 
 
-@permission_required('can_manage_users')
+@admin_required
 def create_role(request):
     if request.method == 'POST':
         form = CreateRoleForm(request.POST)
@@ -87,7 +94,7 @@ def create_role(request):
     return render(request, 'organizations/create_role.html', {'form': form})
 
 
-@permission_required('can_manage_users')
+@admin_required
 def edit_role(request, role_id):
     """
     Editing a role's permissions affects *everyone* who holds that role at
@@ -182,10 +189,17 @@ def member_history(request, membership_id):
 
 @permission_required('can_manage_users')
 def add_member(request):
+    """
+    Anyone with "Manage users" can add a member — but only the Admin can
+    hand out the Admin role itself while doing it. Everyone else's role
+    dropdown simply excludes it (see AddMemberForm), so a manager can add
+    people to any ordinary role but can never promote someone to Admin.
+    """
     org = request.current_organization
+    can_assign_admin = request.current_membership.role.is_owner_role
 
     if request.method == 'POST':
-        form = AddMemberForm(request.POST, organization=org)
+        form = AddMemberForm(request.POST, organization=org, can_assign_admin=can_assign_admin)
         if form.is_valid():
             user = form.save()
             Membership.objects.create(user=user, organization=org, role=form.cleaned_data['role'])
@@ -197,7 +211,7 @@ def add_member(request):
             )
             return redirect('organizations:manage_members')
     else:
-        form = AddMemberForm(organization=org)
+        form = AddMemberForm(organization=org, can_assign_admin=can_assign_admin)
 
     return render(request, 'organizations/add_member.html', {'form': form})
 
@@ -208,11 +222,18 @@ def edit_member(request, membership_id):
     Reassign a member's Role, or deactivate their membership (revokes
     their access to this organization without deleting their login —
     they might belong to other organizations too).
+
+    Two things are kept to the Admin alone, same as add_member: handing
+    the Admin role to someone (the role dropdown just excludes it for
+    anyone who isn't already Admin — see EditMembershipForm), and editing
+    the membership of someone who already holds it — a mere manager can't
+    reach in and demote or deactivate an Admin.
     """
     membership = get_object_or_404(
         Membership, pk=membership_id, organization=request.current_organization,
     )
     org = request.current_organization
+    can_assign_admin = request.current_membership.role.is_owner_role
 
     if membership.user_id == request.user.id:
         messages.error(
@@ -222,8 +243,12 @@ def edit_member(request, membership_id):
         )
         return redirect('organizations:manage_members')
 
+    if membership.role.is_owner_role and not can_assign_admin:
+        messages.error(request, "Only the organization's Admin can change another Admin's membership.")
+        return redirect('organizations:manage_members')
+
     if request.method == 'POST':
-        form = EditMembershipForm(request.POST, instance=membership, organization=org)
+        form = EditMembershipForm(request.POST, instance=membership, organization=org, can_assign_admin=can_assign_admin)
         if form.is_valid():
             new_role = form.cleaned_data['role']
             new_is_active = form.cleaned_data['is_active']
@@ -247,6 +272,6 @@ def edit_member(request, membership_id):
                 messages.success(request, f"Updated {membership.user.username}'s membership.")
                 return redirect('organizations:manage_members')
     else:
-        form = EditMembershipForm(instance=membership, organization=org)
+        form = EditMembershipForm(instance=membership, organization=org, can_assign_admin=can_assign_admin)
 
     return render(request, 'organizations/edit_member.html', {'form': form, 'membership': membership})

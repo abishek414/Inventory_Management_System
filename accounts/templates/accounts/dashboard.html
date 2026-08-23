@@ -89,6 +89,8 @@
                     </div>
                 </a>
             </div>
+        {% endif %}
+        {% if current_membership.role.is_owner_role %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'organizations:manage_roles' %}" class="text-decoration-none text-reset">
                     <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
