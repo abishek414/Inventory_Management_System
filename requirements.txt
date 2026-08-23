@@ -1,0 +1,5 @@
+# Core framework
+Django>=5.2,<6
+
+# Excel bulk-upload support (used from the "inventory" app later on)
+openpyxl>=3.1

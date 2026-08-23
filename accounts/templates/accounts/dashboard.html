@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="h3">Welcome, {{ user.first_name|default:user.username }}</h1>
+<p class="text-muted">
+    This is a placeholder dashboard. Once the organizations app is built,
+    this page will show your organization(s) and, once the inventory app
+    is built, a stock overview for the one you're currently working in.
+</p>
+{% endblock %}
