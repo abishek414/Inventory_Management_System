@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Stock history{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-3">Stock history — {{ current_organization.name }}</h1>
+
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>When</th>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Change</th>
+                <th>From</th>
+                <th>To</th>
+                <th>By</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tx in transactions %}
+            <tr>
+                <td>{{ tx.timestamp|date:"d M Y, H:i" }}</td>
+                <td>{{ tx.item.name }}</td>
+                <td>{{ tx.get_transaction_type_display }}</td>
+                <td>{% if tx.quantity_change > 0 %}+{% endif %}{{ tx.quantity_change }}</td>
+                <td>{{ tx.previous_location|default:"—" }}</td>
+                <td>{{ tx.new_location|default:"—" }}</td>
+                <td>{{ tx.performed_by|default:"—" }}</td>
+                <td>{{ tx.note }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="8" class="text-muted">No activity yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary btn-sm">Back to inventory</a>
+{% endblock %}

@@ -3,12 +3,25 @@
 {% block title %}Inventory{% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Inventory — {{ current_organization.name }}</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Inventory — {{ current_organization.name }}</h1>
+    <div>
+        {% if current_membership.role.can_edit_items %}
+            <a href="{% url 'inventory:manage_locations' %}" class="btn btn-outline-secondary btn-sm">Locations</a>
+        {% endif %}
+        <a href="{% url 'inventory:transaction_history' %}" class="btn btn-outline-secondary btn-sm">History</a>
+        {% if current_membership.role.can_add_stock %}
+            <a href="{% url 'inventory:add_item' %}" class="btn btn-primary btn-sm">Add item</a>
+        {% endif %}
+    </div>
+</div>
 
 {% if not items %}
     <p class="text-muted">
-        No items yet. Add a couple through <code>/admin/</code> for now — a proper
-        "Add item" page is coming in the next piece.
+        No items yet.
+        {% if current_membership.role.can_add_stock %}
+            <a href="{% url 'inventory:add_item' %}">Add your first item</a>.
+        {% endif %}
     </p>
 {% else %}
     <div class="table-responsive">
@@ -21,19 +34,46 @@
                     <th>Unit</th>
                     <th>Location</th>
                     <th></th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in items %}
                 <tr class="{% if item.is_low_stock %}table-warning{% endif %}">
                     <td>{{ item.sku }}</td>
-                    <td>{{ item.name }}</td>
+                    <td><a href="{% url 'inventory:item_detail' item.id %}">{{ item.name }}</a></td>
                     <td>{{ item.quantity }}</td>
                     <td>{{ item.unit }}</td>
-                    <td>{{ item.location|default:"—" }}</td>
+                    <td>
+                        {% if item.location %}
+                            {{ item.location.name }}
+                            {% if item.location.description %}
+                                <br><small class="text-muted">{{ item.location.description }}</small>
+                            {% endif %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td>
                         {% if item.is_low_stock %}
                             <span class="badge bg-warning text-dark">Low stock</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-nowrap">
+                        {% if current_membership.role.can_add_stock %}
+                            <a href="{% url 'inventory:add_stock' item.id %}" class="btn btn-sm btn-outline-success">+ Stock</a>
+                        {% endif %}
+                        {% if current_membership.role.can_remove_stock and item.allow_take %}
+                            <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-sm btn-outline-warning">Take</a>
+                        {% endif %}
+                        {% if current_membership.role.can_remove_stock and item.allow_borrow %}
+                            <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-sm btn-outline-primary">Borrow</a>
+                        {% endif %}
+                        {% if current_membership.role.can_edit_items %}
+                            <a href="{% url 'inventory:update_location' item.id %}" class="btn btn-sm btn-outline-secondary">Move</a>
+                        {% endif %}
+                        {% if current_membership.role.can_remove_stock %}
+                            <a href="{% url 'inventory:delete_item' item.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
                         {% endif %}
                     </td>
                 </tr>

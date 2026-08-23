@@ -50,6 +50,14 @@ class Item(models.Model):
         default=0,
         help_text='Show a low-stock warning at or below this quantity. Use 0 to never warn.',
     )
+    allow_take = models.BooleanField(
+        default=True,
+        help_text='Can be permanently taken out of stock (consumed) — most items.',
+    )
+    allow_borrow = models.BooleanField(
+        default=False,
+        help_text='Can be checked out temporarily and later returned — e.g. tools or equipment.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -77,11 +85,15 @@ class StockTransaction(models.Model):
     REMOVE = 'REMOVE'
     LOCATION_CHANGE = 'LOCATION_CHANGE'
     EXCEL_IMPORT = 'EXCEL_IMPORT'
+    BORROW = 'BORROW'
+    RETURN = 'RETURN'
     TRANSACTION_TYPES = [
         (ADD, 'Stock added'),
-        (REMOVE, 'Stock removed'),
+        (REMOVE, 'Stock removed (taken)'),
         (LOCATION_CHANGE, 'Location changed'),
         (EXCEL_IMPORT, 'Bulk Excel import'),
+        (BORROW, 'Borrowed'),
+        (RETURN, 'Returned'),
     ]
 
     item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='transactions')
@@ -106,3 +118,34 @@ class StockTransaction(models.Model):
 
     def __str__(self):
         return f'{self.get_transaction_type_display()} — {self.item} ({self.timestamp:%Y-%m-%d %H:%M})'
+
+
+class BorrowRecord(models.Model):
+    """
+    One checkout of a borrowable item. Created when someone borrows an
+    item (Item.quantity goes down by the borrowed amount) and closed when
+    it's marked returned (Item.quantity goes back up). Whether an item
+    supports this at all is decided by whoever added it, via
+    Item.allow_borrow — not every item needs to be trackable this way.
+    """
+
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='borrow_records')
+    borrowed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='borrowed_items',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    borrowed_at = models.DateTimeField(auto_now_add=True)
+    due_date = models.DateField(null=True, blank=True, help_text='Optional — when it should come back.')
+    returned_at = models.DateTimeField(null=True, blank=True)
+    note = models.CharField(max_length=255, blank=True)
+
+    class Meta:
+        ordering = ['-borrowed_at']
+
+    @property
+    def is_outstanding(self):
+        return self.returned_at is None
+
+    def __str__(self):
+        status = 'outstanding' if self.is_outstanding else 'returned'
+        return f'{self.item} x{self.quantity} — {self.borrowed_by} ({status})'

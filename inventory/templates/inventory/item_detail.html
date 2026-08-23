@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h1 class="h3 mb-1">{{ item.name }}</h1>
+        <p class="text-muted mb-0">SKU: {{ item.sku }}</p>
+    </div>
+    <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary btn-sm">Back to inventory</a>
+</div>
+
+{% if item.is_low_stock %}
+    <div class="alert alert-warning py-2">Low stock — at or below the reorder level ({{ item.reorder_level }}).</div>
+{% endif %}
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <table class="table table-borderless mb-0">
+            <tr><th style="width:40%">Quantity</th><td>{{ item.quantity }} {{ item.unit }}</td></tr>
+            <tr>
+                <th>Location</th>
+                <td>
+                    {% if item.location %}
+                        {{ item.location.name }}
+                        {% if item.location.description %}
+                            <br><small class="text-muted">{{ item.location.description }}</small>
+                        {% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+            </tr>
+            <tr><th>Reorder level</th><td>{{ item.reorder_level }}</td></tr>
+            <tr><th>Can be taken</th><td>{{ item.allow_take|yesno:"Yes,No" }}</td></tr>
+            <tr><th>Can be borrowed</th><td>{{ item.allow_borrow|yesno:"Yes,No" }}</td></tr>
+        </table>
+        {% if item.description %}
+            <p class="mt-3">{{ item.description|linebreaksbr }}</p>
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        <div class="d-flex flex-wrap gap-2">
+            {% if current_membership.role.can_add_stock %}
+                <a href="{% url 'inventory:add_stock' item.id %}" class="btn btn-outline-success btn-sm">+ Stock</a>
+            {% endif %}
+            {% if current_membership.role.can_remove_stock and item.allow_take %}
+                <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-outline-warning btn-sm">Take</a>
+            {% endif %}
+            {% if current_membership.role.can_remove_stock and item.allow_borrow %}
+                <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-outline-primary btn-sm">Borrow</a>
+            {% endif %}
+            {% if current_membership.role.can_edit_items %}
+                <a href="{% url 'inventory:update_location' item.id %}" class="btn btn-outline-secondary btn-sm">Move</a>
+            {% endif %}
+            {% if current_membership.role.can_remove_stock %}
+                <a href="{% url 'inventory:delete_item' item.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if item.allow_borrow %}
+    <h2 class="h5">Currently borrowed</h2>
+    {% if not outstanding_borrows %}
+        <p class="text-muted">Nothing currently outstanding.</p>
+    {% else %}
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-bordered">
+                <thead>
+                    <tr><th>Borrowed by</th><th>Quantity</th><th>Since</th><th>Due</th><th></th></tr>
+                </thead>
+                <tbody>
+                    {% for record in outstanding_borrows %}
+                    <tr>
+                        <td>{{ record.borrowed_by|default:"—" }}</td>
+                        <td>{{ record.quantity }}</td>
+                        <td>{{ record.borrowed_at|date:"d M Y" }}</td>
+                        <td>{{ record.due_date|date:"d M Y"|default:"—" }}</td>
+                        <td>
+                            {% if current_membership.role.can_remove_stock %}
+                                <a href="{% url 'inventory:return_item' record.id %}" class="btn btn-sm btn-outline-primary">Mark returned</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+{% endif %}
+
+<h2 class="h5 mt-4">Recent activity</h2>
+{% if not history %}
+    <p class="text-muted">No activity yet.</p>
+{% else %}
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr><th>When</th><th>Type</th><th>Change</th><th>By</th><th>Note</th></tr>
+            </thead>
+            <tbody>
+                {% for tx in history %}
+                <tr>
+                    <td>{{ tx.timestamp|date:"d M Y, H:i" }}</td>
+                    <td>{{ tx.get_transaction_type_display }}</td>
+                    <td>{% if tx.quantity_change > 0 %}+{% endif %}{{ tx.quantity_change }}</td>
+                    <td>{{ tx.performed_by|default:"—" }}</td>
+                    <td>{{ tx.note }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endif %}
+{% endblock %}

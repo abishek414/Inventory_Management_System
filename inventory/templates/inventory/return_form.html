@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Return item{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <h1 class="h3 mb-3">Mark returned</h1>
+        <p class="text-muted">
+            {{ record.quantity }} {{ record.item.unit }} of "{{ record.item.name }}",
+            borrowed by {{ record.borrowed_by|default:"—" }} on {{ record.borrowed_at|date:"d M Y" }}.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Confirm return</button>
+            <a href="{% url 'inventory:item_detail' record.item.id %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+    </div>
+</div>
+{% endblock %}
