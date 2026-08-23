@@ -41,6 +41,15 @@ class Item(models.Model):
     sku = models.CharField('SKU', max_length=50, help_text='Your own item code / stock number.')
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
+    track_quantity = models.BooleanField(
+        default=True,
+        help_text=(
+            'Uncheck for items you don\'t want to count individually — e.g. bulk material '
+            '("a pile of sand") where only the location matters. Quantity, unit, reorder '
+            'warnings, and the stock actions (+Stock / Take / Borrow) are all hidden for an '
+            'item with this off.'
+        ),
+    )
     unit = models.CharField(max_length=20, default='pcs', help_text='e.g. pcs, kg, box, litre')
     quantity = models.PositiveIntegerField(default=0)
     location = models.ForeignKey(
@@ -70,17 +79,23 @@ class Item(models.Model):
 
     @property
     def is_out_of_stock(self):
+        if not self.track_quantity:
+            return False
         return self.quantity <= 0
 
     @property
     def is_low_stock(self):
         """
         True at or below the reorder level — INCLUDING zero, since zero is
-        the most extreme case of "at or below." Templates check
-        is_out_of_stock first and only fall back to this for the "Low
-        stock" label, so an item that's completely out shows "Out of
-        stock" instead of the more misleading "Low stock."
+        the most extreme case of "at or below." False outright for an item
+        that isn't quantity-tracked, since its quantity field isn't
+        meaningful there. Templates check is_out_of_stock first and only
+        fall back to this for the "Low stock" label, so an item that's
+        completely out shows "Out of stock" instead of the more
+        misleading "Low stock."
         """
+        if not self.track_quantity:
+            return False
         return self.reorder_level > 0 and self.quantity <= self.reorder_level
 
 

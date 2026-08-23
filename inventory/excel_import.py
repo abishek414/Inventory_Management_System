@@ -5,10 +5,11 @@ decent chunk of row-by-row logic that has nothing to do with request
 handling.
 
 Expected columns (case-insensitive, any order — matched by header name,
-not position): SKU, Name, Description, Unit, Quantity, Location,
-Location Description, Reorder Level, Allow Take, Allow Borrow. Only SKU
-and Name are required; everything else falls back to the same defaults
-the "Add item" form uses if the column is missing or the cell is blank.
+not position): SKU, Name, Description, Track Quantity, Unit, Quantity,
+Location, Location Description, Reorder Level, Allow Take, Allow Borrow.
+Only SKU and Name are required; everything else falls back to the same
+defaults the "Add item" form uses if the column is missing or the cell
+is blank.
 """
 
 import openpyxl
@@ -23,6 +24,8 @@ HEADER_ALIASES = {
     'sku': 'sku',
     'name': 'name',
     'description': 'description',
+    'track quantity': 'track_quantity',
+    'track_quantity': 'track_quantity',
     'unit': 'unit',
     'quantity': 'quantity',
     'qty': 'quantity',
@@ -152,9 +155,17 @@ def import_items_from_excel(file_obj, organization, user):
                 location.description = location_description
                 location.save(update_fields=['description'])
 
-        row_quantity = _parse_int(values.get('quantity'), default=0)
-
         item = Item.objects.filter(organization=organization, sku=sku).first()
+
+        track_quantity = _parse_bool(
+            values.get('track_quantity'),
+            default=item.track_quantity if item is not None else True,
+        )
+        # Quantity/reorder level/take/borrow don't mean anything for an item
+        # that isn't quantity-tracked (bulk material, location-only) — same
+        # rule the "Add item" form enforces — so a row that turns tracking
+        # off ignores whatever those columns say.
+        row_quantity = 0 if not track_quantity else _parse_int(values.get('quantity'), default=0)
 
         if item is None:
             item = Item.objects.create(
@@ -162,12 +173,15 @@ def import_items_from_excel(file_obj, organization, user):
                 sku=sku,
                 name=name,
                 description=str(values.get('description') or ''),
+                track_quantity=track_quantity,
                 unit=str(values.get('unit') or 'pcs').strip() or 'pcs',
                 quantity=row_quantity,
                 location=location,
-                reorder_level=_parse_int(values.get('reorder_level'), default=0),
-                allow_take=_parse_bool(values.get('allow_take'), default=True),
-                allow_borrow=_parse_bool(values.get('allow_borrow'), default=False),
+                reorder_level=(
+                    0 if not track_quantity else _parse_int(values.get('reorder_level'), default=0)
+                ),
+                allow_take=track_quantity and _parse_bool(values.get('allow_take'), default=True),
+                allow_borrow=track_quantity and _parse_bool(values.get('allow_borrow'), default=False),
             )
             StockTransaction.objects.create(
                 item=item,
@@ -181,13 +195,19 @@ def import_items_from_excel(file_obj, organization, user):
         else:
             item.name = name
             item.description = str(values.get('description') or item.description)
+            item.track_quantity = track_quantity
             if values.get('unit'):
                 item.unit = str(values['unit']).strip()
             if location_name:
                 item.location = location
-            item.reorder_level = _parse_int(values.get('reorder_level'), default=item.reorder_level)
-            item.allow_take = _parse_bool(values.get('allow_take'), default=item.allow_take)
-            item.allow_borrow = _parse_bool(values.get('allow_borrow'), default=item.allow_borrow)
+            if not track_quantity:
+                item.reorder_level = 0
+                item.allow_take = False
+                item.allow_borrow = False
+            else:
+                item.reorder_level = _parse_int(values.get('reorder_level'), default=item.reorder_level)
+                item.allow_take = _parse_bool(values.get('allow_take'), default=item.allow_take)
+                item.allow_borrow = _parse_bool(values.get('allow_borrow'), default=item.allow_borrow)
             item.quantity += row_quantity
             item.save()
             StockTransaction.objects.create(
@@ -209,11 +229,15 @@ def build_template_workbook():
     sheet = workbook.active
     sheet.title = 'Inventory'
     sheet.append([
-        'SKU', 'Name', 'Description', 'Unit', 'Quantity', 'Location', 'Location Description',
-        'Reorder Level', 'Allow Take', 'Allow Borrow',
+        'SKU', 'Name', 'Description', 'Track Quantity', 'Unit', 'Quantity', 'Location',
+        'Location Description', 'Reorder Level', 'Allow Take', 'Allow Borrow',
     ])
     sheet.append([
-        'DRILL-001', 'Cordless drill', '18V, comes with 2 batteries', 'pcs', 10,
+        'DRILL-001', 'Cordless drill', '18V, comes with 2 batteries', 'Yes', 'pcs', 10,
         'Main warehouse', 'Aisle 3, shelf B', 2, 'No', 'Yes',
+    ])
+    sheet.append([
+        'SAND-BULK', 'Sand (bulk pile)', 'Not counted individually', 'No', '', '',
+        'Yard 2', 'Behind the main building', '', '', '',
     ])
     return workbook

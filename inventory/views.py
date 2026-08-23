@@ -70,6 +70,9 @@ def add_item(request):
 @permission_required('can_add_stock')
 def add_stock(request, item_id):
     item = _get_org_item_or_404(request, item_id)
+    if not item.track_quantity:
+        messages.error(request, f'"{item.name}" isn\'t quantity-tracked — there\'s no stock count to add to.')
+        return redirect('inventory:item_detail', item_id=item.id)
 
     if request.method == 'POST':
         form = AddStockForm(request.POST)
@@ -95,6 +98,9 @@ def add_stock(request, item_id):
 @permission_required('can_remove_stock')
 def remove_stock(request, item_id):
     item = _get_org_item_or_404(request, item_id)
+    if not item.track_quantity:
+        messages.error(request, f'"{item.name}" isn\'t quantity-tracked — there\'s no stock count to remove from.')
+        return redirect('inventory:item_detail', item_id=item.id)
 
     if request.method == 'POST':
         form = RemoveStockForm(request.POST, item=item)

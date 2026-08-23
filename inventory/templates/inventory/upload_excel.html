@@ -40,13 +40,18 @@
         <hr class="my-4">
         <p class="text-muted small mb-1">Expected columns (any order — only SKU and Name are required):</p>
         <p class="text-muted small">
-            SKU, Name, Description, Unit, Quantity, Location, Location Description, Reorder Level,
-            Allow Take, Allow Borrow
+            SKU, Name, Description, Track Quantity, Unit, Quantity, Location, Location Description,
+            Reorder Level, Allow Take, Allow Borrow
         </p>
         <p class="text-muted small">
             If "Location" doesn't already exist, it's created automatically — "Location Description"
             fills in its description at the same time (or updates it, if you re-upload with a
             description added later).
+        </p>
+        <p class="text-muted small">
+            Set "Track Quantity" to No for bulk items you don't want to count individually (e.g. a
+            pile of sand) — Unit, Quantity, Reorder Level, Allow Take, and Allow Borrow are all
+            ignored for that row; only the location is used.
         </p>
     </div>
 </div>

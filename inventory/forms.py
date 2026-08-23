@@ -11,20 +11,43 @@ class ItemForm(BootstrapFormMixin, forms.ModelForm):
     location, and — decided by whoever's adding it — whether it can be
     taken (consumed permanently) and/or borrowed (checked out and
     expected back).
+
+    If "Track quantity" is unchecked (bulk material where only the
+    location matters), quantity/unit/reorder level become optional and
+    take/borrow are forced off — see clean() below.
     """
 
     class Meta:
         model = Item
         fields = [
-            'sku', 'name', 'description', 'unit', 'quantity', 'location',
+            'sku', 'name', 'description', 'track_quantity', 'unit', 'quantity', 'location',
             'reorder_level', 'allow_take', 'allow_borrow',
         ]
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['location'].required = False
+        self.fields['quantity'].required = False
+        self.fields['reorder_level'].required = False
         if organization is not None:
             self.fields['location'].queryset = organization.locations.all()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        # quantity/reorder_level are optional fields now (see __init__), so a
+        # blank entry cleans to None — not a valid value for the model's
+        # PositiveIntegerField — so it's coalesced to 0 here regardless of
+        # track_quantity.
+        if cleaned_data.get('quantity') is None:
+            cleaned_data['quantity'] = 0
+        if cleaned_data.get('reorder_level') is None:
+            cleaned_data['reorder_level'] = 0
+        if not cleaned_data.get('track_quantity'):
+            cleaned_data['quantity'] = 0
+            cleaned_data['reorder_level'] = 0
+            cleaned_data['allow_take'] = False
+            cleaned_data['allow_borrow'] = False
+        return cleaned_data
 
 
 class EditItemForm(BootstrapFormMixin, forms.ModelForm):
@@ -40,7 +63,24 @@ class EditItemForm(BootstrapFormMixin, forms.ModelForm):
 
     class Meta:
         model = Item
-        fields = ['sku', 'name', 'description', 'unit', 'reorder_level', 'allow_take', 'allow_borrow']
+        fields = [
+            'sku', 'name', 'description', 'track_quantity', 'unit',
+            'reorder_level', 'allow_take', 'allow_borrow',
+        ]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['reorder_level'].required = False
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('reorder_level') is None:
+            cleaned_data['reorder_level'] = 0
+        if not cleaned_data.get('track_quantity'):
+            cleaned_data['reorder_level'] = 0
+            cleaned_data['allow_take'] = False
+            cleaned_data['allow_borrow'] = False
+        return cleaned_data
 
 
 class AddStockForm(BootstrapFormMixin, forms.Form):

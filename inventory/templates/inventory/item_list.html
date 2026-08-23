@@ -45,8 +45,14 @@
                 <tr class="{% if item.is_out_of_stock %}table-danger{% elif item.is_low_stock %}table-warning{% endif %}">
                     <td>{{ item.sku }}</td>
                     <td><a href="{% url 'inventory:item_detail' item.id %}">{{ item.name }}</a></td>
-                    <td>{{ item.quantity }}</td>
-                    <td>{{ item.unit }}</td>
+                    <td>
+                        {% if item.track_quantity %}
+                            {{ item.quantity }}
+                        {% else %}
+                            <span class="text-muted small">not tracked</span>
+                        {% endif %}
+                    </td>
+                    <td>{% if item.track_quantity %}{{ item.unit }}{% endif %}</td>
                     <td>
                         {% if item.location %}
                             {{ item.location.name }}
@@ -65,14 +71,16 @@
                         {% endif %}
                     </td>
                     <td class="text-nowrap">
-                        {% if current_membership.role.can_add_stock %}
-                            <a href="{% url 'inventory:add_stock' item.id %}" class="btn btn-sm btn-outline-success">+ Stock</a>
-                        {% endif %}
-                        {% if current_membership.role.can_remove_stock and item.allow_take %}
-                            <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-sm btn-outline-warning">Take</a>
-                        {% endif %}
-                        {% if current_membership.role.can_remove_stock and item.allow_borrow %}
-                            <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-sm btn-outline-primary">Borrow</a>
+                        {% if item.track_quantity %}
+                            {% if current_membership.role.can_add_stock %}
+                                <a href="{% url 'inventory:add_stock' item.id %}" class="btn btn-sm btn-outline-success">+ Stock</a>
+                            {% endif %}
+                            {% if current_membership.role.can_remove_stock and item.allow_take %}
+                                <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-sm btn-outline-warning">Take</a>
+                            {% endif %}
+                            {% if current_membership.role.can_remove_stock and item.allow_borrow %}
+                                <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-sm btn-outline-primary">Borrow</a>
+                            {% endif %}
                         {% endif %}
                         {% if current_membership.role.can_edit_items %}
                             <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
