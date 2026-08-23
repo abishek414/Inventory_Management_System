@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from accounts.forms import BootstrapFormMixin
 from accounts.models import User
 
-from .models import Organization, Role
+from .models import Membership, Organization, Role
 
 
 class CreateOrganizationForm(BootstrapFormMixin, forms.ModelForm):
@@ -35,7 +35,11 @@ class AddMemberForm(BootstrapFormMixin, UserCreationForm):
     anything.
     """
 
-    role = forms.ModelChoiceField(queryset=Role.objects.none(), empty_label=None)
+    # empty_label means the dropdown starts on a blank "— choose one —" option
+    # instead of silently pre-selecting whichever role happens to sort first
+    # alphabetically — that silent default was the bug behind a member ending
+    # up with a role nobody actually picked for them.
+    role = forms.ModelChoiceField(queryset=Role.objects.none(), empty_label='— Choose a role —')
 
     class Meta:
         model = User
@@ -43,5 +47,19 @@ class AddMemberForm(BootstrapFormMixin, UserCreationForm):
 
     def __init__(self, *args, organization=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if organization is not None:
+            self.fields['role'].queryset = organization.roles.all()
+
+
+class EditMembershipForm(BootstrapFormMixin, forms.ModelForm):
+    """Reassigns which Role a member has, or deactivates their membership entirely."""
+
+    class Meta:
+        model = Membership
+        fields = ['role', 'is_active']
+
+    def __init__(self, *args, organization=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['role'].empty_label = None
         if organization is not None:
             self.fields['role'].queryset = organization.roles.all()

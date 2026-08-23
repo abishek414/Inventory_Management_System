@@ -9,6 +9,8 @@ urlpatterns = [
     path('switch/<int:org_id>/', views.switch_organization, name='switch'),
     path('roles/', views.manage_roles, name='manage_roles'),
     path('roles/create/', views.create_role, name='create_role'),
+    path('roles/<int:role_id>/edit/', views.edit_role, name='edit_role'),
     path('members/', views.manage_members, name='manage_members'),
     path('members/add/', views.add_member, name='add_member'),
+    path('members/<int:membership_id>/edit/', views.edit_member, name='edit_member'),
 ]

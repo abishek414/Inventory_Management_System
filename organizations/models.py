@@ -57,6 +57,16 @@ class Role(models.Model):
     can_upload_excel = models.BooleanField(default=False, help_text='Bulk-upload inventory via an Excel file.')
     can_manage_users = models.BooleanField(default=False, help_text='Create roles and add/manage members.')
 
+    is_owner_role = models.BooleanField(
+        default=False,
+        help_text=(
+            "The organization's built-in Owner role. Always has every permission and "
+            "can't be edited or deleted — this is what guarantees an organization can "
+            "never end up with nobody able to manage it. Only set automatically when an "
+            "organization is created; there is no way to grant this to a role through the app."
+        ),
+    )
+
     class Meta:
         unique_together = ('organization', 'name')
         ordering = ['name']

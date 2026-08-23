@@ -19,18 +19,26 @@
                 <th>Edit items</th>
                 <th>Excel upload</th>
                 <th>Manage users</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for role in roles %}
             <tr>
-                <td>{{ role.name }}</td>
+                <td>{{ role.name }}{% if role.is_owner_role %} <span class="badge bg-info text-dark">built-in</span>{% endif %}</td>
                 <td>{{ role.can_view_inventory|yesno:"✓," }}</td>
                 <td>{{ role.can_add_stock|yesno:"✓," }}</td>
                 <td>{{ role.can_remove_stock|yesno:"✓," }}</td>
                 <td>{{ role.can_edit_items|yesno:"✓," }}</td>
                 <td>{{ role.can_upload_excel|yesno:"✓," }}</td>
                 <td>{{ role.can_manage_users|yesno:"✓," }}</td>
+                <td>
+                    {% if role.is_owner_role %}
+                        <span class="text-muted small">Always full access</span>
+                    {% else %}
+                        <a href="{% url 'organizations:edit_role' role.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

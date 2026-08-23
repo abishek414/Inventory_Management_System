@@ -1,9 +1,9 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 
 from .decorators import permission_required
-from .forms import AddMemberForm, CreateOrganizationForm, CreateRoleForm
+from .forms import AddMemberForm, CreateOrganizationForm, CreateRoleForm, EditMembershipForm
 from .models import Membership, Role
 
 
@@ -25,6 +25,7 @@ def create_organization(request):
             owner_role = Role.objects.create(
                 organization=org,
                 name='Owner',
+                is_owner_role=True,
                 can_view_inventory=True,
                 can_add_stock=True,
                 can_remove_stock=True,
@@ -82,6 +83,60 @@ def create_role(request):
 
 
 @permission_required('can_manage_users')
+def edit_role(request, role_id):
+    """
+    Editing a role's permissions affects *everyone* who holds that role at
+    once — unlike editing one person's membership. That makes this the
+    more dangerous of the two edit screens: turning off "manage users"
+    here can silently strip that permission from every current holder of
+    the role, including the person making the change.
+
+    The built-in Owner role is exempt from this entirely — it can't be
+    opened for editing at all. Owner always has every permission, by
+    definition, so there is nothing to configure and nothing to
+    accidentally break. That's what guarantees an organization can never
+    end up with no one able to manage it: as long as one active member
+    still holds Owner, someone always can. For every other (custom) role,
+    the check below still blocks a save that would leave literally nobody
+    in the organization able to manage users.
+    """
+    org = request.current_organization
+    role = get_object_or_404(Role, pk=role_id, organization=org)
+
+    if role.is_owner_role:
+        messages.error(
+            request,
+            "The Owner role can't be edited — it always has full access by design, "
+            "so the organization can never end up with no one able to manage it.",
+        )
+        return redirect('organizations:manage_roles')
+
+    if request.method == 'POST':
+        form = CreateRoleForm(request.POST, instance=role)
+        if form.is_valid():
+            losing_manage_permission = role.can_manage_users and not form.cleaned_data['can_manage_users']
+            other_role_covers_it = Membership.objects.filter(
+                organization=org, is_active=True, role__can_manage_users=True,
+            ).exclude(role=role).exists()
+
+            if losing_manage_permission and not other_role_covers_it:
+                messages.error(
+                    request,
+                    "Can't save — no one in this organization would be able to manage users "
+                    "anymore. Give another role \"Manage users\" first (or keep at least one "
+                    "active member on a role that has it) before turning it off here.",
+                )
+            else:
+                form.save()
+                messages.success(request, f'Role "{role.name}" updated.')
+                return redirect('organizations:manage_roles')
+    else:
+        form = CreateRoleForm(instance=role)
+
+    return render(request, 'organizations/edit_role.html', {'form': form, 'role': role})
+
+
+@permission_required('can_manage_users')
 def manage_members(request):
     members = request.current_organization.memberships.select_related('user', 'role')
     return render(request, 'organizations/manage_members.html', {'members': members})
@@ -107,3 +162,53 @@ def add_member(request):
         form = AddMemberForm(organization=org)
 
     return render(request, 'organizations/add_member.html', {'form': form})
+
+
+@permission_required('can_manage_users')
+def edit_member(request, membership_id):
+    """
+    Reassign a member's Role, or deactivate their membership (revokes
+    their access to this organization without deleting their login —
+    they might belong to other organizations too).
+    """
+    membership = get_object_or_404(
+        Membership, pk=membership_id, organization=request.current_organization,
+    )
+    org = request.current_organization
+
+    if membership.user_id == request.user.id:
+        messages.error(
+            request,
+            "You can't change your own role or deactivate yourself from here — have another "
+            "admin do it, or use Django admin (/admin/) directly.",
+        )
+        return redirect('organizations:manage_members')
+
+    if request.method == 'POST':
+        form = EditMembershipForm(request.POST, instance=membership, organization=org)
+        if form.is_valid():
+            new_role = form.cleaned_data['role']
+            new_is_active = form.cleaned_data['is_active']
+
+            # Guard against locking everyone (possibly including yourself)
+            # out of managing this organization by removing the last
+            # active can_manage_users membership.
+            other_managers_exist = Membership.objects.filter(
+                organization=org, is_active=True, role__can_manage_users=True,
+            ).exclude(pk=membership.pk).exists()
+            this_would_still_manage = new_is_active and new_role.can_manage_users
+
+            if not this_would_still_manage and not other_managers_exist:
+                messages.error(
+                    request,
+                    "Can't save — this would leave the organization with no one able to "
+                    "manage users. Give someone else that permission first.",
+                )
+            else:
+                form.save()
+                messages.success(request, f"Updated {membership.user.username}'s membership.")
+                return redirect('organizations:manage_members')
+    else:
+        form = EditMembershipForm(instance=membership, organization=org)
+
+    return render(request, 'organizations/edit_member.html', {'form': form, 'membership': membership})
