@@ -95,7 +95,22 @@
                         <div class="fs-3 text-primary"><i class="bi bi-clock-history"></i></div>
                         <div>
                             <div class="fw-semibold">Activity history</div>
-                            <div class="text-muted small">Every stock change, logged</div>
+                            <div class="text-muted small">
+                                {% if current_membership.role.can_manage_users %}Every stock change, logged{% else %}Your own stock changes{% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'inventory:outstanding_borrows' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-hourglass-split"></i></div>
+                        <div>
+                            <div class="fw-semibold">Outstanding borrows</div>
+                            <div class="text-muted small">
+                                {% if current_membership.role.can_manage_users %}Not yet returned, org-wide{% else %}What you still owe back{% endif %}
+                            </div>
                         </div>
                     </div>
                 </a>

@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Outstanding borrows{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-1">Outstanding borrows{% if not can_view_all %} — yours{% endif %}</h1>
+<p class="text-muted mb-3">
+    {% if can_view_all %}
+        Everything currently borrowed and not yet returned, across {{ current_organization.name }}.
+    {% else %}
+        Items you've borrowed and haven't returned yet.
+    {% endif %}
+</p>
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'inventory:transaction_history' %}">Activity history</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'inventory:taken_history' %}">Taken items</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link active" href="{% url 'inventory:outstanding_borrows' %}">Outstanding borrows</a>
+    </li>
+</ul>
+
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Item</th>
+                {% if can_view_all %}<th>Borrowed by</th>{% endif %}
+                <th>Quantity</th>
+                <th>Since</th>
+                <th>Due</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in borrows %}
+            <tr>
+                <td><a href="{% url 'inventory:item_detail' record.item.id %}">{{ record.item.name }}</a></td>
+                {% if can_view_all %}<td>{{ record.borrowed_by|default:"—" }}</td>{% endif %}
+                <td>{{ record.quantity }} {{ record.item.unit }}</td>
+                <td>{{ record.borrowed_at|date:"d M Y" }}</td>
+                <td>{{ record.due_date|date:"d M Y"|default:"—" }}</td>
+                <td>
+                    {% if current_membership.role.can_borrow_items %}
+                        <a href="{% url 'inventory:return_item' record.id %}" class="btn btn-sm btn-outline-primary">Mark returned</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="text-muted">Nothing currently outstanding.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary btn-sm">Back to inventory</a>
+{% endblock %}

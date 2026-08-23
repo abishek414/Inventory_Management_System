@@ -36,7 +36,8 @@
                     {% endif %}
                 </td>
                 <td>{{ member.date_joined|date:"d M Y" }}</td>
-                <td>
+                <td class="text-nowrap">
+                    <a href="{% url 'organizations:member_history' member.id %}" class="btn btn-sm btn-outline-secondary">History</a>
                     {% if member.user_id == user.id %}
                         <span class="text-muted small">(you)</span>
                     {% else %}

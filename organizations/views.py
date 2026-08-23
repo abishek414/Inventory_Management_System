@@ -145,6 +145,39 @@ def manage_members(request):
 
 
 @permission_required('can_manage_users')
+def member_history(request, membership_id):
+    """
+    Everything one member has done — every stock transaction they
+    performed and every item they've borrowed, in this organization only.
+    Only reachable by someone who can already manage users (an Owner or
+    manager) — regular members see their own activity through the
+    inventory app's own history pages instead.
+
+    The inventory app's models are imported here, locally, rather than at
+    the top of the file — this is the only view in this app that needs
+    them, so there's no reason to make every other view in this module
+    carry that cross-app import.
+    """
+    from inventory.models import BorrowRecord, StockTransaction
+
+    membership = get_object_or_404(
+        Membership, pk=membership_id, organization=request.current_organization,
+    )
+    transactions = StockTransaction.objects.filter(
+        item__organization=request.current_organization, performed_by=membership.user,
+    ).select_related('item')[:200]
+    borrows = BorrowRecord.objects.filter(
+        item__organization=request.current_organization, borrowed_by=membership.user,
+    ).select_related('item')[:200]
+
+    return render(request, 'organizations/member_history.html', {
+        'membership': membership,
+        'transactions': transactions,
+        'borrows': borrows,
+    })
+
+
+@permission_required('can_manage_users')
 def add_member(request):
     org = request.current_organization
 

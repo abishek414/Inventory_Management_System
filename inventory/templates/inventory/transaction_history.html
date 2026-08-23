@@ -1,9 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}Stock history{% endblock %}
+{% block title %}{% if taken_only %}Taken items{% else %}Activity history{% endif %}{% endblock %}
 
 {% block content %}
-<h1 class="h3 mb-3">Stock history — {{ current_organization.name }}</h1>
+<h1 class="h3 mb-1">{% if taken_only %}Taken items{% else %}Activity history{% endif %}{% if not can_view_all %} — yours{% endif %}</h1>
+<p class="text-muted mb-3">
+    {% if can_view_all %}
+        Showing everyone's activity in {{ current_organization.name }}.
+    {% else %}
+        Showing only your own activity.
+    {% endif %}
+</p>
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item">
+        <a class="nav-link {% if not taken_only %}active{% endif %}" href="{% url 'inventory:transaction_history' %}">Activity history</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {% if taken_only %}active{% endif %}" href="{% url 'inventory:taken_history' %}">Taken items</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'inventory:outstanding_borrows' %}">Outstanding borrows</a>
+    </li>
+</ul>
 
 <div class="table-responsive">
     <table class="table table-bordered align-middle">

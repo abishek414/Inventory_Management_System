@@ -113,10 +113,14 @@ class RemoveStockForm(BootstrapFormMixin, forms.Form):
 
 
 class BorrowForm(BootstrapFormMixin, forms.Form):
+    """
+    Who's borrowing and when is never something to pick here — it's always
+    the person submitting the form (request.user), on today's date, set
+    automatically by the view. This form only asks what a human actually
+    has to decide: how much, and an optional note.
+    """
+
     quantity = forms.IntegerField(min_value=1, initial=1)
-    due_date = forms.DateField(
-        required=False, widget=forms.DateInput(attrs={'type': 'date'}), help_text='Optional.',
-    )
     note = forms.CharField(max_length=255, required=False)
 
     def __init__(self, *args, item=None, **kwargs):

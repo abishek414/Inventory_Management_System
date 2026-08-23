@@ -209,7 +209,6 @@ def borrow_item(request, item_id):
                 item=item,
                 borrowed_by=request.user,
                 quantity=quantity,
-                due_date=form.cleaned_data['due_date'],
                 note=form.cleaned_data['note'],
             )
             StockTransaction.objects.create(
@@ -306,8 +305,69 @@ def download_excel_template(request):
 
 @permission_required('can_view_inventory')
 def transaction_history(request):
+    """
+    Everyone with can_view_inventory can see this, but what they see
+    depends on can_manage_users: someone who manages users (an Owner or
+    manager) sees every transaction in the organization, since auditing
+    everyone's activity is exactly the kind of thing that role needs.
+    Anyone else only sees their own — activity is personal until you're
+    responsible for the people doing it.
+    """
+    can_view_all = request.current_membership.role.can_manage_users
     transactions = StockTransaction.objects.filter(
         item__organization=request.current_organization,
-    ).select_related('item', 'performed_by')[:200]
+    ).select_related('item', 'performed_by')
+    if not can_view_all:
+        transactions = transactions.filter(performed_by=request.user)
+    transactions = transactions[:200]
 
-    return render(request, 'inventory/transaction_history.html', {'transactions': transactions})
+    return render(request, 'inventory/transaction_history.html', {
+        'transactions': transactions,
+        'can_view_all': can_view_all,
+    })
+
+
+@permission_required('can_view_inventory')
+def taken_history(request):
+    """
+    Same all-vs-own-activity split as transaction_history, filtered down
+    to just "Take" (stock removed) transactions — a focused view of what's
+    actually left the building, without ADD/borrow/import noise mixed in.
+    """
+    can_view_all = request.current_membership.role.can_manage_users
+    transactions = StockTransaction.objects.filter(
+        item__organization=request.current_organization,
+        transaction_type=StockTransaction.REMOVE,
+    ).select_related('item', 'performed_by')
+    if not can_view_all:
+        transactions = transactions.filter(performed_by=request.user)
+    transactions = transactions[:200]
+
+    return render(request, 'inventory/transaction_history.html', {
+        'transactions': transactions,
+        'can_view_all': can_view_all,
+        'taken_only': True,
+    })
+
+
+@permission_required('can_view_inventory')
+def outstanding_borrows(request):
+    """
+    Every borrow that hasn't been marked returned yet. Same all-vs-own
+    split as the two history views above: a manager sees every
+    outstanding borrow in the organization (so they can chase people
+    down), everyone else only sees what they themselves still owe back.
+    """
+    can_view_all = request.current_membership.role.can_manage_users
+    borrows = BorrowRecord.objects.filter(
+        item__organization=request.current_organization,
+        returned_at__isnull=True,
+    ).select_related('item', 'borrowed_by')
+    if not can_view_all:
+        borrows = borrows.filter(borrowed_by=request.user)
+    borrows = borrows[:200]
+
+    return render(request, 'inventory/outstanding_borrows.html', {
+        'borrows': borrows,
+        'can_view_all': can_view_all,
+    })

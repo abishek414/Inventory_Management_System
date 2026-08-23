@@ -75,12 +75,36 @@ class Role(models.Model):
         ),
     )
 
+    # Every permission a role can hold. Kept as one list so both save()
+    # below and anything else that needs "all of them" (e.g. a future
+    # permission field) only has to be taught about it in one place.
+    PERMISSION_FIELDS = [
+        'can_view_inventory', 'can_add_stock', 'can_remove_stock', 'can_borrow_items',
+        'can_delete_items', 'can_edit_items', 'can_upload_excel', 'can_manage_users',
+    ]
+
     class Meta:
         unique_together = ('organization', 'name')
         ordering = ['name']
 
     def __str__(self):
         return f'{self.name} ({self.organization})'
+
+    def save(self, *args, **kwargs):
+        # Belt-and-suspenders: whenever a row with is_owner_role=True is
+        # saved, force every permission on regardless of what was passed
+        # in. This is what "the Owner role always has full access, by
+        # design" actually means in code — not just "the edit screen is
+        # blocked," but "it's structurally impossible for this row to end
+        # up with a permission switched off." Without this, a permission
+        # added later (a new BooleanField, same as can_borrow_items and
+        # can_delete_items were) would default to off for every row that
+        # already exists — including Owner — the exact bug a one-time data
+        # migration just had to clean up after the fact.
+        if self.is_owner_role:
+            for field_name in self.PERMISSION_FIELDS:
+                setattr(self, field_name, True)
+        super().save(*args, **kwargs)
 
 
 class Membership(models.Model):
