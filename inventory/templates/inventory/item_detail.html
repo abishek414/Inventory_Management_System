@@ -62,14 +62,14 @@
                 {% if current_membership.role.can_remove_stock and item.allow_take %}
                     <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-outline-warning btn-sm">Take</a>
                 {% endif %}
-                {% if current_membership.role.can_remove_stock and item.allow_borrow %}
+                {% if current_membership.role.can_borrow_items and item.allow_borrow %}
                     <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-outline-primary btn-sm">Borrow</a>
                 {% endif %}
             {% endif %}
             {% if current_membership.role.can_edit_items %}
                 <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-outline-secondary btn-sm">Edit</a>
             {% endif %}
-            {% if current_membership.role.can_remove_stock %}
+            {% if current_membership.role.can_delete_items %}
                 <a href="{% url 'inventory:delete_item' item.id %}" class="btn btn-outline-danger btn-sm">Delete</a>
             {% endif %}
         </div>
@@ -94,7 +94,7 @@
                         <td>{{ record.borrowed_at|date:"d M Y" }}</td>
                         <td>{{ record.due_date|date:"d M Y"|default:"—" }}</td>
                         <td>
-                            {% if current_membership.role.can_remove_stock %}
+                            {% if current_membership.role.can_borrow_items %}
                                 <a href="{% url 'inventory:return_item' record.id %}" class="btn btn-sm btn-outline-primary">Mark returned</a>
                             {% endif %}
                         </td>

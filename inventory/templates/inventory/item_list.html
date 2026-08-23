@@ -94,14 +94,14 @@
                             {% if current_membership.role.can_remove_stock and item.allow_take %}
                                 <a href="{% url 'inventory:remove_stock' item.id %}" class="btn btn-sm btn-outline-warning">Take</a>
                             {% endif %}
-                            {% if current_membership.role.can_remove_stock and item.allow_borrow %}
+                            {% if current_membership.role.can_borrow_items and item.allow_borrow %}
                                 <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-sm btn-outline-primary">Borrow</a>
                             {% endif %}
                         {% endif %}
                         {% if current_membership.role.can_edit_items %}
                             <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                         {% endif %}
-                        {% if current_membership.role.can_remove_stock %}
+                        {% if current_membership.role.can_delete_items %}
                             <a href="{% url 'inventory:delete_item' item.id %}" class="btn btn-sm btn-outline-danger">Delete</a>
                         {% endif %}
                     </td>

@@ -29,6 +29,8 @@ def create_organization(request):
                 can_view_inventory=True,
                 can_add_stock=True,
                 can_remove_stock=True,
+                can_borrow_items=True,
+                can_delete_items=True,
                 can_edit_items=True,
                 can_upload_excel=True,
                 can_manage_users=True,

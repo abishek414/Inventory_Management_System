@@ -3,33 +3,116 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h1 class="h3">Welcome, {{ user.first_name|default:user.username }}</h1>
+<h1 class="h3 mb-1">Welcome back, {{ user.first_name|default:user.username }}</h1>
 
 {% if not user_memberships %}
-    <div class="alert alert-info">
-        You're not part of any organization yet.
-        <a href="{% url 'organizations:create' %}">Create one</a> to get started.
+    <p class="text-muted mb-4">Let's get your first organization set up.</p>
+    <div class="text-center border rounded-3 p-4 p-md-5">
+        <div class="fs-1 text-primary mb-2"><i class="bi bi-building-add"></i></div>
+        <h2 class="h5 mb-2">You're not part of any organization yet</h2>
+        <p class="text-muted mb-4 mx-auto" style="max-width: 28rem;">
+            Create one to start tracking inventory — you'll automatically become its Owner, with
+            full access to everything.
+        </p>
+        <a href="{% url 'organizations:create' %}" class="btn btn-primary">Create an organization</a>
     </div>
 {% elif not current_organization %}
-    <div class="alert alert-warning">
-        Choose an organization to work in from the switcher in the top-right.
+    <p class="text-muted mb-4">You belong to more than one organization.</p>
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-0">
+        <i class="bi bi-exclamation-triangle"></i>
+        <span>Choose which one to work in from the switcher at the top of the page.</span>
     </div>
 {% else %}
-    <p>
-        Working in <strong>{{ current_organization.name }}</strong>
-        as <strong>{{ current_membership.role.name }}</strong>.
-    </p>
-    <p class="text-muted">
-        Adding stock, removing it, updating item locations, and Excel upload
-        are built in the next pieces — for now you can browse whatever's in
-        the inventory.
-    </p>
-    {% if current_membership.role.can_view_inventory %}
-        <a href="{% url 'inventory:item_list' %}" class="btn btn-primary btn-sm">View inventory</a>
-    {% endif %}
-    {% if current_membership.role.can_manage_users %}
-        <a href="{% url 'organizations:manage_members' %}" class="btn btn-outline-secondary btn-sm">Manage members</a>
-        <a href="{% url 'organizations:manage_roles' %}" class="btn btn-outline-secondary btn-sm">Manage roles</a>
-    {% endif %}
+    <p class="text-muted mb-4">Here's where things stand.</p>
+
+    <div class="border rounded-3 p-3 p-md-4 mb-4 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
+        <div>
+            <div class="text-muted small text-uppercase" style="letter-spacing: .04em;">Working in</div>
+            <div class="h5 mb-1">{{ current_organization.name }}</div>
+            <span class="badge text-bg-light border">{{ current_membership.role.name }}</span>
+        </div>
+        {% if user_memberships|length > 1 %}
+            <span class="text-muted small">Switch organizations from the menu at the top.</span>
+        {% endif %}
+    </div>
+
+    <h2 class="h6 text-muted text-uppercase mb-3" style="letter-spacing: .04em;">Quick actions</h2>
+    <div class="row g-3 mb-4">
+        {% if current_membership.role.can_view_inventory %}
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'inventory:item_list' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-box-seam"></i></div>
+                        <div>
+                            <div class="fw-semibold">Inventory</div>
+                            <div class="text-muted small">View, add, and manage stock</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endif %}
+        {% if current_membership.role.can_upload_excel %}
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'inventory:upload_excel' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-file-earmark-spreadsheet"></i></div>
+                        <div>
+                            <div class="fw-semibold">Upload Excel</div>
+                            <div class="text-muted small">Bulk-add or restock items</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endif %}
+        {% if current_membership.role.can_manage_users %}
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'organizations:manage_members' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-people"></i></div>
+                        <div>
+                            <div class="fw-semibold">Members</div>
+                            <div class="text-muted small">Add people, assign roles</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'organizations:manage_roles' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-shield-check"></i></div>
+                        <div>
+                            <div class="fw-semibold">Roles</div>
+                            <div class="text-muted small">Define permission levels</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endif %}
+        {% if current_membership.role.can_view_inventory %}
+            <div class="col-12 col-sm-6 col-lg-4">
+                <a href="{% url 'inventory:transaction_history' %}" class="text-decoration-none text-reset">
+                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                        <div class="fs-3 text-primary"><i class="bi bi-clock-history"></i></div>
+                        <div>
+                            <div class="fw-semibold">Activity history</div>
+                            <div class="text-muted small">Every stock change, logged</div>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endif %}
+    </div>
+
+    <h2 class="h6 text-muted text-uppercase mb-3" style="letter-spacing: .04em;">Your permissions as {{ current_membership.role.name }}</h2>
+    <div class="d-flex flex-wrap gap-2">
+        {% if current_membership.role.can_view_inventory %}<span class="badge text-bg-light border">View inventory</span>{% endif %}
+        {% if current_membership.role.can_add_stock %}<span class="badge text-bg-light border">Add stock</span>{% endif %}
+        {% if current_membership.role.can_remove_stock %}<span class="badge text-bg-light border">Take / remove stock</span>{% endif %}
+        {% if current_membership.role.can_borrow_items %}<span class="badge text-bg-light border">Borrow items</span>{% endif %}
+        {% if current_membership.role.can_delete_items %}<span class="badge text-bg-light border">Delete items</span>{% endif %}
+        {% if current_membership.role.can_edit_items %}<span class="badge text-bg-light border">Edit items & locations</span>{% endif %}
+        {% if current_membership.role.can_upload_excel %}<span class="badge text-bg-light border">Excel upload</span>{% endif %}
+        {% if current_membership.role.can_manage_users %}<span class="badge text-bg-light border">Manage users</span>{% endif %}
+    </div>
 {% endif %}
 {% endblock %}

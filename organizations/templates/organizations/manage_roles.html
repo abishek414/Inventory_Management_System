@@ -15,7 +15,9 @@
                 <th>Name</th>
                 <th>View</th>
                 <th>Add stock</th>
-                <th>Remove stock</th>
+                <th>Take (remove stock)</th>
+                <th>Borrow</th>
+                <th>Delete items</th>
                 <th>Edit items</th>
                 <th>Excel upload</th>
                 <th>Manage users</th>
@@ -29,6 +31,8 @@
                 <td>{{ role.can_view_inventory|yesno:"✓," }}</td>
                 <td>{{ role.can_add_stock|yesno:"✓," }}</td>
                 <td>{{ role.can_remove_stock|yesno:"✓," }}</td>
+                <td>{{ role.can_borrow_items|yesno:"✓," }}</td>
+                <td>{{ role.can_delete_items|yesno:"✓," }}</td>
                 <td>{{ role.can_edit_items|yesno:"✓," }}</td>
                 <td>{{ role.can_upload_excel|yesno:"✓," }}</td>
                 <td>{{ role.can_manage_users|yesno:"✓," }}</td>

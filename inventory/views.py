@@ -169,14 +169,12 @@ def edit_item(request, item_id):
     return render(request, 'inventory/edit_item.html', {'form': form, 'item': item})
 
 
-@permission_required('can_remove_stock')
+@permission_required('can_delete_items')
 def delete_item(request, item_id):
     """
-    Deleting an item entirely uses the same permission as removing stock
-    ('can_remove_stock') rather than a brand-new flag — the brief grouped
-    "delete stock or item" as one action. If you'd rather split these into
-    separate permissions later, that just means adding a new boolean field
-    to the Role model (a small migration) and swapping the decorator here.
+    Deleting an item is its own permission ('can_delete_items'), separate
+    from taking/removing stock or borrowing — so a role can be allowed to
+    take or borrow items without also being able to delete them outright.
     """
     item = _get_org_item_or_404(request, item_id)
 
@@ -189,12 +187,12 @@ def delete_item(request, item_id):
     return render(request, 'inventory/delete_item_confirm.html', {'item': item})
 
 
-@permission_required('can_remove_stock')
+@permission_required('can_borrow_items')
 def borrow_item(request, item_id):
     """
-    Borrowing uses the same permission as removing stock — both reduce
-    what's available — but only applies at all if this specific item was
-    marked as borrowable when it was added (item.allow_borrow).
+    Borrowing has its own permission ('can_borrow_items'), separate from
+    taking/removing stock — but only applies at all if this specific item
+    was marked as borrowable when it was added (item.allow_borrow).
     """
     item = _get_org_item_or_404(request, item_id)
     if not item.allow_borrow:
@@ -229,10 +227,10 @@ def borrow_item(request, item_id):
     return render(request, 'inventory/borrow_form.html', {'form': form, 'item': item})
 
 
-@permission_required('can_remove_stock')
+@permission_required('can_borrow_items')
 def return_item(request, record_id):
     """
-    Anyone with can_remove_stock can mark an outstanding borrow returned —
+    Anyone with can_borrow_items can mark an outstanding borrow returned —
     not just the person who originally borrowed it — since in practice
     it's often a manager checking the item back in physically, not the
     borrower operating the computer themselves.

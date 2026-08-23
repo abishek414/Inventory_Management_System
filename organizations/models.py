@@ -52,7 +52,15 @@ class Role(models.Model):
 
     can_view_inventory = models.BooleanField(default=True, help_text='See items and stock levels.')
     can_add_stock = models.BooleanField(default=False, help_text='Increase stock quantities.')
-    can_remove_stock = models.BooleanField(default=False, help_text='Decrease or delete stock.')
+    can_remove_stock = models.BooleanField(
+        default=False, help_text='Decrease stock quantity — the "Take" action.',
+    )
+    can_borrow_items = models.BooleanField(
+        default=False, help_text='Borrow items marked as borrowable, and mark them returned.',
+    )
+    can_delete_items = models.BooleanField(
+        default=False, help_text='Permanently delete an item from inventory.',
+    )
     can_edit_items = models.BooleanField(default=False, help_text='Edit item details and storage location.')
     can_upload_excel = models.BooleanField(default=False, help_text='Bulk-upload inventory via an Excel file.')
     can_manage_users = models.BooleanField(default=False, help_text='Create roles and add/manage members.')

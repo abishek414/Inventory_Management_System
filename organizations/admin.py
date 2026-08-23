@@ -19,7 +19,8 @@ class OrganizationAdmin(admin.ModelAdmin):
 class RoleAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'organization', 'can_view_inventory', 'can_add_stock',
-        'can_remove_stock', 'can_edit_items', 'can_upload_excel', 'can_manage_users',
+        'can_remove_stock', 'can_borrow_items', 'can_delete_items',
+        'can_edit_items', 'can_upload_excel', 'can_manage_users',
     )
     list_filter = ('organization',)
 

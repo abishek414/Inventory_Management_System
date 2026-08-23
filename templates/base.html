@@ -9,53 +9,63 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <link href="{% static 'css/custom.css' %}" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">Inventory Management System</a>
-            <div class="d-flex align-items-center">
-                <a href="{% url 'home' %}" class="btn btn-outline-light btn-sm me-3">Home</a>
-                {% if user.is_authenticated %}
-                    {% if user_memberships %}
-                        <div class="dropdown me-3">
-                            <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                {% if current_organization %}{{ current_organization.name }}{% else %}Choose organization{% endif %}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% for membership in user_memberships %}
-                                    <li>
-                                        <a class="dropdown-item {% if current_organization.id == membership.organization.id %}active{% endif %}"
-                                           href="{% url 'organizations:switch' membership.organization.id %}">
-                                            {{ membership.organization.name }}
-                                            <span class="text-muted small">({{ membership.role.name }})</span>
-                                        </a>
-                                    </li>
-                                {% endfor %}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'organizations:create' %}">+ Create new organization</a></li>
-                                {% if current_membership.role.can_manage_users %}
-                                    <li><a class="dropdown-item" href="{% url 'organizations:manage_members' %}">Manage members</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'organizations:manage_roles' %}">Manage roles</a></li>
-                                {% endif %}
-                            </ul>
-                        </div>
+            <button
+                class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="mainNav">
+                <div class="d-flex flex-column flex-lg-row align-items-lg-center ms-lg-auto gap-2 mt-3 mt-lg-0">
+                    <a href="{% url 'home' %}" class="btn btn-outline-light btn-sm">Home</a>
+                    {% if user.is_authenticated %}
+                        {% if user_memberships %}
+                            <div class="dropdown">
+                                <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    {% if current_organization %}{{ current_organization.name }}{% else %}Choose organization{% endif %}
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    {% for membership in user_memberships %}
+                                        <li>
+                                            <a class="dropdown-item {% if current_organization.id == membership.organization.id %}active{% endif %}"
+                                               href="{% url 'organizations:switch' membership.organization.id %}">
+                                                {{ membership.organization.name }}
+                                                <span class="text-muted small">({{ membership.role.name }})</span>
+                                            </a>
+                                        </li>
+                                    {% endfor %}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'organizations:create' %}">+ Create new organization</a></li>
+                                    {% if current_membership.role.can_manage_users %}
+                                        <li><a class="dropdown-item" href="{% url 'organizations:manage_members' %}">Manage members</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'organizations:manage_roles' %}">Manage roles</a></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        {% else %}
+                            <a href="{% url 'organizations:create' %}" class="btn btn-outline-light btn-sm">Create organization</a>
+                        {% endif %}
+                        {% if current_membership.role.can_view_inventory %}
+                            <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-light btn-sm">Inventory</a>
+                        {% endif %}
+                        <span class="navbar-text text-light">{{ user }}</span>
+                        <form method="post" action="{% url 'logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+                        </form>
                     {% else %}
-                        <a href="{% url 'organizations:create' %}" class="btn btn-outline-light btn-sm me-3">Create organization</a>
+                        <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">Log in</a>
+                        <a href="{% url 'signup' %}" class="btn btn-light btn-sm">Sign up</a>
                     {% endif %}
-                    {% if current_membership.role.can_view_inventory %}
-                        <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-light btn-sm me-3">Inventory</a>
-                    {% endif %}
-                    <span class="navbar-text text-light me-3">{{ user }}</span>
-                    <form method="post" action="{% url 'logout' %}" class="d-inline">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm me-2">Log in</a>
-                    <a href="{% url 'signup' %}" class="btn btn-light btn-sm">Sign up</a>
-                {% endif %}
+                </div>
             </div>
         </div>
     </nav>
