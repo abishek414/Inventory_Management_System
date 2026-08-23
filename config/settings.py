@@ -56,7 +56,8 @@ INSTALLED_APPS = [
 
     # Local apps
     'accounts',
-    # 'organizations' and 'inventory' are added in later pieces of the build.
+    'organizations',
+    # 'inventory' is added in a later piece of the build.
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,10 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Resolves request.current_organization / request.current_membership
+    # for every logged-in request. Must come after AuthenticationMiddleware
+    # (needs request.user) and before anything that relies on those two.
+    'organizations.middleware.CurrentOrganizationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -83,6 +88,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'organizations.context_processors.organization_context',
             ],
         },
     },

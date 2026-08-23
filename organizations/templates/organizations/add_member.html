@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Add member{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h1 class="h3 mb-3">Add a member to {{ current_organization.name }}</h1>
+        <p class="text-muted">
+            This creates a brand-new login for this person and assigns them a role in
+            your organization straight away. Once submitted, share the username and
+            password with them yourself — this form doesn't send any email.
+        </p>
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text|safe }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Create account &amp; add</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

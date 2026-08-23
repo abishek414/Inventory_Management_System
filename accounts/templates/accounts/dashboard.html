@@ -4,9 +4,29 @@
 
 {% block content %}
 <h1 class="h3">Welcome, {{ user.first_name|default:user.username }}</h1>
-<p class="text-muted">
-    This is a placeholder dashboard. Once the organizations app is built,
-    this page will show your organization(s) and, once the inventory app
-    is built, a stock overview for the one you're currently working in.
-</p>
+
+{% if not user_memberships %}
+    <div class="alert alert-info">
+        You're not part of any organization yet.
+        <a href="{% url 'organizations:create' %}">Create one</a> to get started.
+    </div>
+{% elif not current_organization %}
+    <div class="alert alert-warning">
+        Choose an organization to work in from the switcher in the top-right.
+    </div>
+{% else %}
+    <p>
+        Working in <strong>{{ current_organization.name }}</strong>
+        as <strong>{{ current_membership.role.name }}</strong>.
+    </p>
+    <p class="text-muted">
+        Inventory features (view/add/remove stock, update locations, Excel
+        upload) are built in the next pieces — this dashboard will show a
+        stock overview here once they exist.
+    </p>
+    {% if current_membership.role.can_manage_users %}
+        <a href="{% url 'organizations:manage_members' %}" class="btn btn-outline-secondary btn-sm">Manage members</a>
+        <a href="{% url 'organizations:manage_roles' %}" class="btn btn-outline-secondary btn-sm">Manage roles</a>
+    {% endif %}
+{% endif %}
 {% endblock %}

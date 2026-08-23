@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Roles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Roles in {{ current_organization.name }}</h1>
+    <a href="{% url 'organizations:create_role' %}" class="btn btn-primary btn-sm">New role</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>View</th>
+                <th>Add stock</th>
+                <th>Remove stock</th>
+                <th>Edit items</th>
+                <th>Excel upload</th>
+                <th>Manage users</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for role in roles %}
+            <tr>
+                <td>{{ role.name }}</td>
+                <td>{{ role.can_view_inventory|yesno:"✓," }}</td>
+                <td>{{ role.can_add_stock|yesno:"✓," }}</td>
+                <td>{{ role.can_remove_stock|yesno:"✓," }}</td>
+                <td>{{ role.can_edit_items|yesno:"✓," }}</td>
+                <td>{{ role.can_upload_excel|yesno:"✓," }}</td>
+                <td>{{ role.can_manage_users|yesno:"✓," }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<a href="{% url 'organizations:manage_members' %}" class="btn btn-outline-secondary btn-sm">Back to members</a>
+{% endblock %}
