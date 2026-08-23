@@ -27,6 +27,22 @@ class ItemForm(BootstrapFormMixin, forms.ModelForm):
             self.fields['location'].queryset = organization.locations.all()
 
 
+class EditItemForm(BootstrapFormMixin, forms.ModelForm):
+    """
+    Edits an item's own details — everything about it EXCEPT quantity and
+    location. Those two stay off this form on purpose: they're both
+    tracked with a full audit trail (who changed them, when, by how much)
+    through the dedicated Add/Remove stock and Move actions. Letting this
+    form touch them too would let someone silently overwrite a quantity or
+    location with no log entry at all, which defeats the point of having
+    that history.
+    """
+
+    class Meta:
+        model = Item
+        fields = ['sku', 'name', 'description', 'unit', 'reorder_level', 'allow_take', 'allow_borrow']
+
+
 class AddStockForm(BootstrapFormMixin, forms.Form):
     quantity = forms.IntegerField(min_value=1, label='Quantity to add')
     note = forms.CharField(max_length=255, required=False, help_text='Optional, e.g. "delivery from supplier".')

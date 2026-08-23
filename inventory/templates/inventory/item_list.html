@@ -70,6 +70,7 @@
                             <a href="{% url 'inventory:borrow_item' item.id %}" class="btn btn-sm btn-outline-primary">Borrow</a>
                         {% endif %}
                         {% if current_membership.role.can_edit_items %}
+                            <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-sm btn-outline-secondary">Edit</a>
                             <a href="{% url 'inventory:update_location' item.id %}" class="btn btn-sm btn-outline-secondary">Move</a>
                         {% endif %}
                         {% if current_membership.role.can_remove_stock %}

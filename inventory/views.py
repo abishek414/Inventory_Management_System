@@ -5,7 +5,8 @@ from django.utils import timezone
 from organizations.decorators import permission_required
 
 from .forms import (
-    AddStockForm, BorrowForm, ItemForm, LocationForm, RemoveStockForm, ReturnForm, UpdateLocationForm,
+    AddStockForm, BorrowForm, EditItemForm, ItemForm, LocationForm, RemoveStockForm, ReturnForm,
+    UpdateLocationForm,
 )
 from .models import BorrowRecord, Item, StockTransaction
 
@@ -112,6 +113,28 @@ def remove_stock(request, item_id):
         form = RemoveStockForm(item=item)
 
     return render(request, 'inventory/stock_form.html', {'form': form, 'item': item, 'action': 'Remove'})
+
+
+@permission_required('can_edit_items')
+def edit_item(request, item_id):
+    """
+    Edits an item's own details (name, SKU, description, unit, reorder
+    level, and whether it's takeable/borrowable). Quantity and location
+    are deliberately not here — see EditItemForm's docstring — those go
+    through Add/Remove stock and Move so they stay in the audit trail.
+    """
+    item = _get_org_item_or_404(request, item_id)
+
+    if request.method == 'POST':
+        form = EditItemForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'"{item.name}" updated.')
+            return redirect('inventory:item_detail', item_id=item.id)
+    else:
+        form = EditItemForm(instance=item)
+
+    return render(request, 'inventory/edit_item.html', {'form': form, 'item': item})
 
 
 @permission_required('can_edit_items')
