@@ -68,10 +68,11 @@ class Role(models.Model):
     is_owner_role = models.BooleanField(
         default=False,
         help_text=(
-            "The organization's built-in Owner role. Always has every permission and "
-            "can't be edited or deleted — this is what guarantees an organization can "
-            "never end up with nobody able to manage it. Only set automatically when an "
-            "organization is created; there is no way to grant this to a role through the app."
+            "The organization's built-in Admin role (shown to users as \"Admin\" — this "
+            "field name is historical). Always has every permission and can't be edited "
+            "or deleted — this is what guarantees an organization can never end up with "
+            "nobody able to manage it. Only set automatically when an organization is "
+            "created; there is no way to grant this to a role through the app."
         ),
     )
 

@@ -11,7 +11,7 @@
         <div class="fs-1 text-primary mb-2"><i class="bi bi-building-add"></i></div>
         <h2 class="h5 mb-2">You're not part of any organization yet</h2>
         <p class="text-muted mb-4 mx-auto" style="max-width: 28rem;">
-            Create one to start tracking inventory — you'll automatically become its Owner, with
+            Create one to start tracking inventory — you'll automatically become its Admin, with
             full access to everything.
         </p>
         <a href="{% url 'organizations:create' %}" class="btn btn-primary">Create an organization</a>
@@ -36,12 +36,25 @@
         {% endif %}
     </div>
 
+    {% if current_membership.role.can_view_inventory %}
+        <form method="get" action="{% url 'inventory:item_list' %}" class="mb-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input
+                    type="text" name="q" class="form-control"
+                    placeholder="Search inventory by name..."
+                >
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    {% endif %}
+
     <h2 class="h6 text-muted text-uppercase mb-3" style="letter-spacing: .04em;">Quick actions</h2>
     <div class="row g-3 mb-4">
         {% if current_membership.role.can_view_inventory %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'inventory:item_list' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-box-seam"></i></div>
                         <div>
                             <div class="fw-semibold">Inventory</div>
@@ -54,7 +67,7 @@
         {% if current_membership.role.can_upload_excel %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'inventory:upload_excel' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-file-earmark-spreadsheet"></i></div>
                         <div>
                             <div class="fw-semibold">Upload Excel</div>
@@ -67,7 +80,7 @@
         {% if current_membership.role.can_manage_users %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'organizations:manage_members' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-people"></i></div>
                         <div>
                             <div class="fw-semibold">Members</div>
@@ -78,7 +91,7 @@
             </div>
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'organizations:manage_roles' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-shield-check"></i></div>
                         <div>
                             <div class="fw-semibold">Roles</div>
@@ -91,7 +104,7 @@
         {% if current_membership.role.can_view_inventory %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'inventory:transaction_history' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-clock-history"></i></div>
                         <div>
                             <div class="fw-semibold">Activity history</div>
@@ -104,7 +117,7 @@
             </div>
             <div class="col-12 col-sm-6 col-lg-4">
                 <a href="{% url 'inventory:outstanding_borrows' %}" class="text-decoration-none text-reset">
-                    <div class="border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
+                    <div class="dashboard-tile border rounded-3 p-3 h-100 d-flex align-items-center gap-3">
                         <div class="fs-3 text-primary"><i class="bi bi-hourglass-split"></i></div>
                         <div>
                             <div class="fw-semibold">Outstanding borrows</div>

@@ -11,9 +11,12 @@ from .models import Membership, Role
 def create_organization(request):
     """
     Any logged-in user can create an organization; doing so makes them its
-    Owner — a role that's created automatically with every permission
+    Admin — a role that's created automatically with every permission
     switched on, so the very first person in a new organization is never
-    locked out of managing it.
+    locked out of managing it. Internally this is still the "owner role"
+    (is_owner_role=True, same structural guarantees as always) — "Admin"
+    is just the name shown for it, since that's the more familiar term
+    for this kind of full-access role.
     """
     if request.method == 'POST':
         form = CreateOrganizationForm(request.POST)
@@ -24,7 +27,7 @@ def create_organization(request):
 
             owner_role = Role.objects.create(
                 organization=org,
-                name='Owner',
+                name='Admin',
                 is_owner_role=True,
                 can_view_inventory=True,
                 can_add_stock=True,
@@ -38,7 +41,7 @@ def create_organization(request):
             Membership.objects.create(user=request.user, organization=org, role=owner_role)
 
             request.session['current_org_id'] = org.id
-            messages.success(request, f'"{org.name}" created — you are its Owner.')
+            messages.success(request, f'"{org.name}" created — you are its Admin.')
             return redirect('dashboard')
     else:
         form = CreateOrganizationForm()
@@ -93,12 +96,12 @@ def edit_role(request, role_id):
     here can silently strip that permission from every current holder of
     the role, including the person making the change.
 
-    The built-in Owner role is exempt from this entirely — it can't be
-    opened for editing at all. Owner always has every permission, by
+    The built-in Admin role is exempt from this entirely — it can't be
+    opened for editing at all. Admin always has every permission, by
     definition, so there is nothing to configure and nothing to
     accidentally break. That's what guarantees an organization can never
     end up with no one able to manage it: as long as one active member
-    still holds Owner, someone always can. For every other (custom) role,
+    still holds Admin, someone always can. For every other (custom) role,
     the check below still blocks a save that would leave literally nobody
     in the organization able to manage users.
     """
@@ -108,7 +111,7 @@ def edit_role(request, role_id):
     if role.is_owner_role:
         messages.error(
             request,
-            "The Owner role can't be edited — it always has full access by design, "
+            "The Admin role can't be edited — it always has full access by design, "
             "so the organization can never end up with no one able to manage it.",
         )
         return redirect('organizations:manage_roles')
