@@ -10,6 +10,9 @@
             <a href="{% url 'inventory:manage_locations' %}" class="btn btn-outline-secondary btn-sm">Locations</a>
         {% endif %}
         <a href="{% url 'inventory:transaction_history' %}" class="btn btn-outline-secondary btn-sm">History</a>
+        {% if current_membership.role.can_upload_excel %}
+            <a href="{% url 'inventory:upload_excel' %}" class="btn btn-outline-secondary btn-sm">Upload Excel</a>
+        {% endif %}
         {% if current_membership.role.can_add_stock %}
             <a href="{% url 'inventory:add_item' %}" class="btn btn-primary btn-sm">Add item</a>
         {% endif %}

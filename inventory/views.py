@@ -1,12 +1,14 @@
 from django.contrib import messages
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from organizations.decorators import permission_required
 
+from .excel_import import ExcelImportError, build_template_workbook, import_items_from_excel
 from .forms import (
-    AddStockForm, BorrowForm, EditItemForm, ItemForm, LocationForm, RemoveStockForm, ReturnForm,
-    UpdateLocationForm,
+    AddStockForm, BorrowForm, EditItemForm, ExcelUploadForm, ItemForm, LocationForm, RemoveStockForm,
+    ReturnForm, UpdateLocationForm,
 )
 from .models import BorrowRecord, Item, StockTransaction
 
@@ -283,6 +285,42 @@ def manage_locations(request):
 
     locations = org.locations.all()
     return render(request, 'inventory/manage_locations.html', {'form': form, 'locations': locations})
+
+
+@permission_required('can_upload_excel')
+def upload_excel(request):
+    org = request.current_organization
+
+    if request.method == 'POST':
+        form = ExcelUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            try:
+                result = import_items_from_excel(form.cleaned_data['file'], org, request.user)
+            except ExcelImportError as exc:
+                messages.error(request, str(exc))
+            else:
+                summary = f"Import finished — {result['created']} item(s) created, {result['updated']} updated."
+                if result['skipped']:
+                    summary += f" {len(result['skipped'])} row(s) skipped."
+                messages.success(request, summary)
+                for row_number, reason in result['skipped']:
+                    messages.warning(request, f'Row {row_number} skipped: {reason}.')
+                return redirect('inventory:item_list')
+    else:
+        form = ExcelUploadForm()
+
+    return render(request, 'inventory/upload_excel.html', {'form': form})
+
+
+@permission_required('can_upload_excel')
+def download_excel_template(request):
+    workbook = build_template_workbook()
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+    response['Content-Disposition'] = 'attachment; filename="inventory_upload_template.xlsx"'
+    workbook.save(response)
+    return response
 
 
 @permission_required('can_view_inventory')

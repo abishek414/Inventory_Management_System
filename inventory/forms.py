@@ -104,3 +104,16 @@ class BorrowForm(BootstrapFormMixin, forms.Form):
 
 class ReturnForm(BootstrapFormMixin, forms.Form):
     note = forms.CharField(max_length=255, required=False, help_text='Optional, e.g. condition on return.')
+
+
+class ExcelUploadForm(BootstrapFormMixin, forms.Form):
+    file = forms.FileField(
+        label='Excel file',
+        help_text='.xlsx only. Use "Download template" below if you\'re not sure of the columns.',
+    )
+
+    def clean_file(self):
+        uploaded = self.cleaned_data['file']
+        if not uploaded.name.lower().endswith('.xlsx'):
+            raise forms.ValidationError('Please upload a .xlsx file (the format Excel saves by default).')
+        return uploaded

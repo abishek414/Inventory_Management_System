@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Excel{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <h1 class="h3 mb-3">Bulk upload — {{ current_organization.name }}</h1>
+
+        <p class="text-muted">
+            Upload a .xlsx spreadsheet to add or update many items at once. A row whose SKU
+            doesn't exist yet becomes a new item; a row whose SKU already exists updates that
+            item's details and adds the row's quantity to its current stock (treated as a new
+            delivery, not a correction). Every row is logged in the item's activity history,
+            same as any other stock change.
+        </p>
+
+        <a href="{% url 'inventory:download_excel_template' %}" class="btn btn-outline-secondary btn-sm mb-4">
+            Download template
+        </a>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">Upload</button>
+            <a href="{% url 'inventory:item_list' %}" class="btn btn-outline-secondary">Cancel</a>
+        </form>
+
+        <hr class="my-4">
+        <p class="text-muted small mb-1">Expected columns (any order — only SKU and Name are required):</p>
+        <p class="text-muted small">
+            SKU, Name, Description, Unit, Quantity, Location, Location Description, Reorder Level,
+            Allow Take, Allow Borrow
+        </p>
+        <p class="text-muted small">
+            If "Location" doesn't already exist, it's created automatically — "Location Description"
+            fills in its description at the same time (or updates it, if you re-upload with a
+            description added later).
+        </p>
+    </div>
+</div>
+{% endblock %}
