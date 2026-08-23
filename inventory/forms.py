@@ -6,19 +6,6 @@ from .models import Item
 
 
 class ItemForm(BootstrapFormMixin, forms.ModelForm):
-    """
-    Creates a brand-new inventory item, with its starting quantity,
-    location, and — decided by whoever's adding it — whether it can be
-    taken (consumed permanently) and/or borrowed (checked out and
-    expected back). Location (name + optional description) is plain text
-    entered right here, owned by this item alone — not shared with or
-    affected by any other item's location.
-
-    If "Track quantity" is unchecked (bulk material where only the
-    location matters), quantity/unit/reorder level become optional and
-    take/borrow are forced off — see clean() below.
-    """
-
     class Meta:
         model = Item
         fields = [
@@ -27,19 +14,12 @@ class ItemForm(BootstrapFormMixin, forms.ModelForm):
         ]
 
     def __init__(self, *args, organization=None, **kwargs):
-        # organization is accepted (and ignored) for backwards compatibility
-        # with call sites that still pass it — location no longer needs an
-        # organization-scoped queryset since it's plain text per item.
         super().__init__(*args, **kwargs)
         self.fields['quantity'].required = False
         self.fields['reorder_level'].required = False
 
     def clean(self):
         cleaned_data = super().clean()
-        # quantity/reorder_level are optional fields now (see __init__), so a
-        # blank entry cleans to None — not a valid value for the model's
-        # PositiveIntegerField — so it's coalesced to 0 here regardless of
-        # track_quantity.
         if cleaned_data.get('quantity') is None:
             cleaned_data['quantity'] = 0
         if cleaned_data.get('reorder_level') is None:
@@ -53,21 +33,6 @@ class ItemForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class EditItemForm(BootstrapFormMixin, forms.ModelForm):
-    """
-    Edits an item's own details, including its location — location is
-    plain text owned by this one item, so changing it here has no effect
-    on any other item, unlike the old shared-Location design. The view
-    that uses this form (inventory.views.edit_item) still logs a location
-    change to the item's history when location_name/location_description
-    actually changes, even though the field lives on this general form now.
-
-    Quantity stays off this form on purpose: it's tracked with a full
-    audit trail (who changed it, when, by how much) through the dedicated
-    Add/Remove stock actions. Letting this form touch it too would let
-    someone silently overwrite a quantity with no log entry at all, which
-    defeats the point of having that history.
-    """
-
     class Meta:
         model = Item
         fields = [
@@ -96,10 +61,6 @@ class AddStockForm(BootstrapFormMixin, forms.Form):
 
 
 class RemoveStockForm(BootstrapFormMixin, forms.Form):
-    """The "Take" form — labels say "take" since that's the only action this
-    form is ever used for, even though the class/field names underneath
-    still say "remove" to match can_remove_stock and StockTransaction.REMOVE."""
-
     quantity = forms.IntegerField(min_value=1, label='Quantity to take')
     note = forms.CharField(max_length=255, required=False, help_text='Optional, e.g. "used on Job #42" or "damaged / written off".')
 
@@ -117,13 +78,6 @@ class RemoveStockForm(BootstrapFormMixin, forms.Form):
 
 
 class BorrowForm(BootstrapFormMixin, forms.Form):
-    """
-    Who's borrowing and when is never something to pick here — it's always
-    the person submitting the form (request.user), on today's date, set
-    automatically by the view. This form only asks what a human actually
-    has to decide: how much, and an optional note.
-    """
-
     quantity = forms.IntegerField(min_value=1, initial=1)
     note = forms.CharField(max_length=255, required=False)
 

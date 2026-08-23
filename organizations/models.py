@@ -4,12 +4,6 @@ from django.utils.text import slugify
 
 
 class Organization(models.Model):
-    """
-    A tenant. Everything in this system — roles, members, and (starting in
-    the next piece) items/stock/locations — belongs to exactly one
-    Organization, and organizations never see each other's data.
-    """
-
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     created_by = models.ForeignKey(
@@ -39,14 +33,6 @@ class Organization(models.Model):
 
 
 class Role(models.Model):
-    """
-    A permission level DEFINED BY an organization, for its own members —
-    e.g. "Warehouse Staff" (can add/remove stock, can't upload Excel) or
-    "Viewer" (can only look). Roles are not shared between organizations;
-    each org builds its own set, which is exactly what was asked for:
-    "the level of user (group) will be created by that organization."
-    """
-
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='roles')
     name = models.CharField(max_length=100)
 
@@ -76,9 +62,6 @@ class Role(models.Model):
         ),
     )
 
-    # Every permission a role can hold. Kept as one list so both save()
-    # below and anything else that needs "all of them" (e.g. a future
-    # permission field) only has to be taught about it in one place.
     PERMISSION_FIELDS = [
         'can_view_inventory', 'can_add_stock', 'can_remove_stock', 'can_borrow_items',
         'can_delete_items', 'can_edit_items', 'can_upload_excel', 'can_manage_users',
@@ -92,16 +75,6 @@ class Role(models.Model):
         return f'{self.name} ({self.organization})'
 
     def save(self, *args, **kwargs):
-        # Belt-and-suspenders: whenever a row with is_owner_role=True is
-        # saved, force every permission on regardless of what was passed
-        # in. This is what "the Owner role always has full access, by
-        # design" actually means in code — not just "the edit screen is
-        # blocked," but "it's structurally impossible for this row to end
-        # up with a permission switched off." Without this, a permission
-        # added later (a new BooleanField, same as can_borrow_items and
-        # can_delete_items were) would default to off for every row that
-        # already exists — including Owner — the exact bug a one-time data
-        # migration just had to clean up after the fact.
         if self.is_owner_role:
             for field_name in self.PERMISSION_FIELDS:
                 setattr(self, field_name, True)
@@ -109,13 +82,6 @@ class Role(models.Model):
 
 
 class Membership(models.Model):
-    """
-    Links one User to one Organization with one Role. A user can hold a
-    separate Membership (and therefore a different Role) in more than one
-    organization — e.g. Viewer at Company A, Owner at Company B — but only
-    one Role per organization.
-    """
-
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='memberships')
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='memberships')
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='memberships')

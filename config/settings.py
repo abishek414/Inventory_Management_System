@@ -1,38 +1,13 @@
-"""
-Django settings for the Inventory Management System project.
-
-This project is a multi-tenant inventory management app: many
-organizations use the same installation, each organization's data is
-kept separate, and each organization defines its own user roles
-(who can view stock, add/remove stock, edit item locations, or bulk
-upload via Excel).
-
-Piece 1 of the build wires up the base project + the "accounts" app
-(custom user model, signup/login/logout). Multi-tenancy (organizations,
-roles, membership) and the inventory models come in later pieces.
-"""
-
 import os
 from pathlib import Path
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# ---------------------------------------------------------------------------
-# Core / security
-# ---------------------------------------------------------------------------
-
-# SECURITY WARNING: keep the secret key used in production secret!
-# Locally this falls back to a dev-only value so the project runs out of the
-# box. In production (PythonAnywhere) set DJANGO_SECRET_KEY as a real
-# environment variable and never commit the real value to git.
 SECRET_KEY = os.environ.get(
     'DJANGO_SECRET_KEY',
     'django-insecure-dev-only-key-change-this-in-production',
 )
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = [
@@ -41,11 +16,6 @@ ALLOWED_HOSTS = [
     if h.strip()
 ]
 
-
-# ---------------------------------------------------------------------------
-# Applications
-# ---------------------------------------------------------------------------
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -53,8 +23,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    # Local apps
     'accounts',
     'organizations',
     'inventory',
@@ -66,9 +34,6 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # Resolves request.current_organization / request.current_membership
-    # for every logged-in request. Must come after AuthenticationMiddleware
-    # (needs request.user) and before anything that relies on those two.
     'organizations.middleware.CurrentOrganizationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -79,7 +44,6 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        # Project-wide templates (base.html, registration/login.html, ...)
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -96,13 +60,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-
-# ---------------------------------------------------------------------------
-# Database
-# ---------------------------------------------------------------------------
-# Defaults to SQLite for local development. On PythonAnywhere you'll swap
-# this for MySQL when we get to the deployment piece.
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -110,14 +67,6 @@ DATABASES = {
     }
 }
 
-
-# ---------------------------------------------------------------------------
-# Authentication
-# ---------------------------------------------------------------------------
-
-# Custom user model (accounts.User) instead of django.contrib.auth's
-# default User. Setting this from the very first migration avoids painful
-# migrations later.
 AUTH_USER_MODEL = 'accounts.User'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -131,27 +80,6 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
-
-# ---------------------------------------------------------------------------
-# Email (used for the "Forgot password" reset link)
-# ---------------------------------------------------------------------------
-# Defaults to printing emails to the console instead of actually sending
-# them, so "Forgot password" works out of the box for local testing: click
-# "Send reset link", then look at the terminal window running `runserver` —
-# the full email, including the working reset link, is printed right there.
-# There's nothing to configure to test the feature this way.
-#
-# To send real emails (needed once this goes live), set these environment
-# variables before starting the server. For Gmail, DJANGO_EMAIL_HOST_PASSWORD
-# must be a 16-character "App Password" from your Google Account — not your
-# normal Gmail password, Gmail rejects that for this:
-#   DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
-#   DJANGO_EMAIL_HOST=smtp.gmail.com
-#   DJANGO_EMAIL_PORT=587
-#   DJANGO_EMAIL_USE_TLS=True
-#   DJANGO_EMAIL_HOST_USER=youraddress@gmail.com
-#   DJANGO_EMAIL_HOST_PASSWORD=<16-character app password>
-#   DJANGO_DEFAULT_FROM_EMAIL=youraddress@gmail.com
 EMAIL_BACKEND = os.environ.get(
     'DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend',
 )
@@ -162,28 +90,13 @@ EMAIL_HOST_USER = os.environ.get('DJANGO_EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('DJANGO_EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'no-reply@inventory-system.local')
 
-
-# ---------------------------------------------------------------------------
-# Internationalization
-# ---------------------------------------------------------------------------
-
 LANGUAGE_CODE = 'en-us'
-
-# Matches where this project's first real-world use case is based (Darwin, NT).
-# Change this if your organization's warehouses are elsewhere.
 TIME_ZONE = 'Australia/Darwin'
-
 USE_I18N = True
 USE_TZ = True
 
-
-# ---------------------------------------------------------------------------
-# Static files (CSS, JavaScript, Images)
-# ---------------------------------------------------------------------------
-
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-# Where `collectstatic` gathers everything for production deployment.
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

@@ -2,20 +2,6 @@ from .models import Membership
 
 
 class CurrentOrganizationMiddleware:
-    """
-    A logged-in user can belong to more than one organization, so on every
-    request we need to know which one they're currently working in. That
-    choice is remembered in the session (`current_org_id`) and resolved
-    here into two request attributes every view/template can rely on:
-
-    - request.current_organization : Organization or None
-    - request.current_membership   : Membership or None (has .role on it)
-
-    If the session doesn't name a valid organization but the user only
-    belongs to exactly one, that one is auto-selected — no need to make a
-    single-organization user pick from a list of one.
-    """
-
     def __init__(self, get_response):
         self.get_response = get_response
 

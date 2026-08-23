@@ -11,13 +11,6 @@ from .models import BorrowRecord, Item, StockTransaction
 
 
 def _get_org_item_or_404(request, item_id):
-    """
-    Always look items up scoped to the current organization. Without the
-    `organization=` filter here, a logged-in user could load
-    /inventory/<id>/add-stock/ for an item ID belonging to a *different*
-    organization just by guessing/incrementing the number in the URL —
-    this is what stops that.
-    """
     return get_object_or_404(Item, pk=item_id, organization=request.current_organization)
 
 
@@ -97,14 +90,6 @@ def add_stock(request, item_id):
 
 @permission_required('can_remove_stock')
 def remove_stock(request, item_id):
-    """
-    This is the "Take" action — the only button that ever links here (see
-    item_list.html / item_detail.html). It's still named remove_stock and
-    still logs a REMOVE transaction internally, matching the
-    can_remove_stock permission and StockTransaction.REMOVE type, but
-    everything a person actually reads on screen says "Take" — since
-    that's the only thing this view is ever used for.
-    """
     item = _get_org_item_or_404(request, item_id)
     if not item.track_quantity:
         messages.error(request, f'"{item.name}" isn\'t quantity-tracked — there\'s no stock count to take from.')
@@ -133,21 +118,6 @@ def remove_stock(request, item_id):
 
 @permission_required('can_edit_items')
 def edit_item(request, item_id):
-    """
-    Edits an item's own details — name, SKU, description, unit, location,
-    reorder level, and whether it's takeable/borrowable. Location lives
-    right here now: it's plain text owned by this one item (not a shared
-    object other items also point to), so there's no separate "Move"
-    screen to send people to anymore, and editing it here can never
-    affect any other item.
-
-    Quantity is still deliberately not on this form — see EditItemForm's
-    docstring — that goes through Add/Remove stock so it stays in the
-    audit trail. Location changes still land in that same audit trail
-    (a LOCATION_CHANGE entry) even though the field lives on this general
-    form; the old/new values are captured before saving specifically so
-    that logging is accurate no matter how many other fields changed too.
-    """
     item = _get_org_item_or_404(request, item_id)
     old_location_name = item.location_name
     old_location_description = item.location_description
@@ -179,11 +149,6 @@ def edit_item(request, item_id):
 
 @permission_required('can_delete_items')
 def delete_item(request, item_id):
-    """
-    Deleting an item is its own permission ('can_delete_items'), separate
-    from taking/removing stock or borrowing — so a role can be allowed to
-    take or borrow items without also being able to delete them outright.
-    """
     item = _get_org_item_or_404(request, item_id)
 
     if request.method == 'POST':
@@ -197,11 +162,6 @@ def delete_item(request, item_id):
 
 @permission_required('can_borrow_items')
 def borrow_item(request, item_id):
-    """
-    Borrowing has its own permission ('can_borrow_items'), separate from
-    taking/removing stock — but only applies at all if this specific item
-    was marked as borrowable when it was added (item.allow_borrow).
-    """
     item = _get_org_item_or_404(request, item_id)
     if not item.allow_borrow:
         messages.error(request, f'"{item.name}" is not set up as borrowable.')
@@ -236,12 +196,6 @@ def borrow_item(request, item_id):
 
 @permission_required('can_borrow_items')
 def return_item(request, record_id):
-    """
-    Anyone with can_borrow_items can mark an outstanding borrow returned —
-    not just the person who originally borrowed it — since in practice
-    it's often a manager checking the item back in physically, not the
-    borrower operating the computer themselves.
-    """
     record = get_object_or_404(
         BorrowRecord,
         pk=record_id,
@@ -313,14 +267,6 @@ def download_excel_template(request):
 
 @permission_required('can_view_inventory')
 def transaction_history(request):
-    """
-    Everyone with can_view_inventory can see this, but what they see
-    depends on can_manage_users: someone who manages users (an Owner or
-    manager) sees every transaction in the organization, since auditing
-    everyone's activity is exactly the kind of thing that role needs.
-    Anyone else only sees their own — activity is personal until you're
-    responsible for the people doing it.
-    """
     can_view_all = request.current_membership.role.can_manage_users
     transactions = StockTransaction.objects.filter(
         item__organization=request.current_organization,
@@ -337,11 +283,6 @@ def transaction_history(request):
 
 @permission_required('can_view_inventory')
 def taken_history(request):
-    """
-    Same all-vs-own-activity split as transaction_history, filtered down
-    to just "Take" (stock removed) transactions — a focused view of what's
-    actually left the building, without ADD/borrow/import noise mixed in.
-    """
     can_view_all = request.current_membership.role.can_manage_users
     transactions = StockTransaction.objects.filter(
         item__organization=request.current_organization,
@@ -360,12 +301,6 @@ def taken_history(request):
 
 @permission_required('can_view_inventory')
 def outstanding_borrows(request):
-    """
-    Every borrow that hasn't been marked returned yet. Same all-vs-own
-    split as the two history views above: a manager sees every
-    outstanding borrow in the organization (so they can chase people
-    down), everyone else only sees what they themselves still owe back.
-    """
     can_view_all = request.current_membership.role.can_manage_users
     borrows = BorrowRecord.objects.filter(
         item__organization=request.current_organization,

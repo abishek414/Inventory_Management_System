@@ -9,15 +9,6 @@ from .models import Membership, Role
 
 @login_required
 def create_organization(request):
-    """
-    Any logged-in user can create an organization; doing so makes them its
-    Admin — a role that's created automatically with every permission
-    switched on, so the very first person in a new organization is never
-    locked out of managing it. Internally this is still the "owner role"
-    (is_owner_role=True, same structural guarantees as always) — "Admin"
-    is just the name shown for it, since that's the more familiar term
-    for this kind of full-access role.
-    """
     if request.method == 'POST':
         form = CreateOrganizationForm(request.POST)
         if form.is_valid():
@@ -51,7 +42,6 @@ def create_organization(request):
 
 @login_required
 def switch_organization(request, org_id):
-    """Changes which organization's data the current session is working in."""
     membership = Membership.objects.filter(
         user=request.user, organization_id=org_id, is_active=True,
     ).select_related('organization').first()
@@ -67,13 +57,6 @@ def switch_organization(request, org_id):
 
 @admin_required
 def manage_roles(request):
-    """
-    Only the Admin can view/manage roles — not just anyone with "Manage
-    users". Roles define what every member (including other managers) is
-    allowed to do, so the power to create or edit one is kept to the one
-    role that's already structurally guaranteed to always exist and
-    always have full access.
-    """
     roles = request.current_organization.roles.all()
     return render(request, 'organizations/manage_roles.html', {'roles': roles})
 
@@ -96,22 +79,6 @@ def create_role(request):
 
 @admin_required
 def edit_role(request, role_id):
-    """
-    Editing a role's permissions affects *everyone* who holds that role at
-    once — unlike editing one person's membership. That makes this the
-    more dangerous of the two edit screens: turning off "manage users"
-    here can silently strip that permission from every current holder of
-    the role, including the person making the change.
-
-    The built-in Admin role is exempt from this entirely — it can't be
-    opened for editing at all. Admin always has every permission, by
-    definition, so there is nothing to configure and nothing to
-    accidentally break. That's what guarantees an organization can never
-    end up with no one able to manage it: as long as one active member
-    still holds Admin, someone always can. For every other (custom) role,
-    the check below still blocks a save that would leave literally nobody
-    in the organization able to manage users.
-    """
     org = request.current_organization
     role = get_object_or_404(Role, pk=role_id, organization=org)
 
@@ -156,18 +123,6 @@ def manage_members(request):
 
 @permission_required('can_manage_users')
 def member_history(request, membership_id):
-    """
-    Everything one member has done — every stock transaction they
-    performed and every item they've borrowed, in this organization only.
-    Only reachable by someone who can already manage users (an Owner or
-    manager) — regular members see their own activity through the
-    inventory app's own history pages instead.
-
-    The inventory app's models are imported here, locally, rather than at
-    the top of the file — this is the only view in this app that needs
-    them, so there's no reason to make every other view in this module
-    carry that cross-app import.
-    """
     from inventory.models import BorrowRecord, StockTransaction
 
     membership = get_object_or_404(
@@ -189,12 +144,6 @@ def member_history(request, membership_id):
 
 @permission_required('can_manage_users')
 def add_member(request):
-    """
-    Anyone with "Manage users" can add a member — but only the Admin can
-    hand out the Admin role itself while doing it. Everyone else's role
-    dropdown simply excludes it (see AddMemberForm), so a manager can add
-    people to any ordinary role but can never promote someone to Admin.
-    """
     org = request.current_organization
     can_assign_admin = request.current_membership.role.is_owner_role
 
@@ -218,17 +167,6 @@ def add_member(request):
 
 @permission_required('can_manage_users')
 def edit_member(request, membership_id):
-    """
-    Reassign a member's Role, or deactivate their membership (revokes
-    their access to this organization without deleting their login —
-    they might belong to other organizations too).
-
-    Two things are kept to the Admin alone, same as add_member: handing
-    the Admin role to someone (the role dropdown just excludes it for
-    anyone who isn't already Admin — see EditMembershipForm), and editing
-    the membership of someone who already holds it — a mere manager can't
-    reach in and demote or deactivate an Admin.
-    """
     membership = get_object_or_404(
         Membership, pk=membership_id, organization=request.current_organization,
     )
@@ -253,9 +191,6 @@ def edit_member(request, membership_id):
             new_role = form.cleaned_data['role']
             new_is_active = form.cleaned_data['is_active']
 
-            # Guard against locking everyone (possibly including yourself)
-            # out of managing this organization by removing the last
-            # active can_manage_users membership.
             other_managers_exist = Membership.objects.filter(
                 organization=org, is_active=True, role__can_manage_users=True,
             ).exclude(pk=membership.pk).exists()

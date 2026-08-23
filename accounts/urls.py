@@ -14,11 +14,6 @@ urlpatterns = [
     ),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('dashboard/', views.dashboard, name='dashboard'),
-
-    # "Forgot password" flow — request a reset link, get told to check your
-    # email, click the link from the email to set a new password, then land
-    # on a confirmation page. All four steps are Django's own built-in views;
-    # only the templates and the forms' styling are ours.
     path(
         'password-reset/',
         auth_views.PasswordResetView.as_view(

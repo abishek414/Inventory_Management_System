@@ -24,22 +24,6 @@ class CreateRoleForm(BootstrapFormMixin, forms.ModelForm):
 
 
 class AddMemberForm(BootstrapFormMixin, UserCreationForm):
-    """
-    Creates a brand-new login AND immediately assigns it a Role in the
-    organization creating it. This matches how the system is meant to
-    work per the original brief: the organization sets up accounts for
-    its own staff and assigns their access level, rather than staff
-    self-registering and asking to join.
-
-    The admin using this form is responsible for passing the username
-    and password to that employee themselves — the form doesn't email
-    anything.
-    """
-
-    # empty_label means the dropdown starts on a blank "— choose one —" option
-    # instead of silently pre-selecting whichever role happens to sort first
-    # alphabetically — that silent default was the bug behind a member ending
-    # up with a role nobody actually picked for them.
     role = forms.ModelChoiceField(queryset=Role.objects.none(), empty_label='— Choose a role —')
 
     class Meta:
@@ -51,16 +35,11 @@ class AddMemberForm(BootstrapFormMixin, UserCreationForm):
         if organization is not None:
             queryset = organization.roles.all()
             if not can_assign_admin:
-                # Anyone with "Manage users" can add a member, but only
-                # the Admin can hand out the Admin role itself — everyone
-                # else's dropdown simply never offers it.
                 queryset = queryset.exclude(is_owner_role=True)
             self.fields['role'].queryset = queryset
 
 
 class EditMembershipForm(BootstrapFormMixin, forms.ModelForm):
-    """Reassigns which Role a member has, or deactivates their membership entirely."""
-
     class Meta:
         model = Membership
         fields = ['role', 'is_active']

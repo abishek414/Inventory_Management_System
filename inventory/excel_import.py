@@ -1,25 +1,9 @@
-"""
-Parsing/import logic for the "upload the Excel file of the inventory"
-feature from the original brief. Kept out of views.py because it's a
-decent chunk of row-by-row logic that has nothing to do with request
-handling.
-
-Expected columns (case-insensitive, any order — matched by header name,
-not position): SKU, Name, Description, Track Quantity, Unit, Quantity,
-Location, Location Description, Reorder Level, Allow Take, Allow Borrow.
-Only SKU and Name are required; everything else falls back to the same
-defaults the "Add item" form uses if the column is missing or the cell
-is blank.
-"""
-
 import openpyxl
 
 from .models import Item, StockTransaction
 
 REQUIRED_HEADERS = {'sku', 'name'}
 
-# Maps a normalized header (lowercased, stripped) to the field name we use
-# internally. Accepts a couple of friendly variants per column.
 HEADER_ALIASES = {
     'sku': 'sku',
     'name': 'name',
@@ -65,30 +49,10 @@ def _parse_int(value, default):
 
 
 class ExcelImportError(Exception):
-    """Raised for a problem with the file itself (not a single bad row)."""
+    pass
 
 
 def import_items_from_excel(file_obj, organization, user):
-    """
-    Reads an uploaded .xlsx file and creates/updates Items for the given
-    organization. Returns a dict: {'created': int, 'updated': int,
-    'skipped': [(row_number, reason), ...]}.
-
-    A SKU that doesn't exist yet becomes a new item, with the row's
-    quantity as its starting stock. A SKU that already exists is treated
-    like a restock: its details (name, description, unit, location,
-    reorder level, take/borrow flags) are refreshed from the row, and the
-    row's quantity is ADDED to whatever stock it already had — not
-    replaced — since a re-uploaded spreadsheet usually represents a new
-    delivery, not a correction. Every row that touches an item leaves a
-    "Bulk Excel import" entry in that item's history, same as any other
-    stock change.
-
-    Location is plain text on the item itself, not a shared object — a
-    row's Location/Location Description columns only ever set that one
-    row's item, with no effect on any other item that happens to share
-    the same location name.
-    """
     try:
         workbook = openpyxl.load_workbook(file_obj, read_only=True, data_only=True)
     except Exception as exc:
@@ -104,7 +68,7 @@ def import_items_from_excel(file_obj, organization, user):
     except StopIteration:
         raise ExcelImportError('That file looks empty — no header row found.')
 
-    column_map = {}  # column index -> internal field name
+    column_map = {}
     for index, raw_header in enumerate(header_row):
         if raw_header is None:
             continue
@@ -125,9 +89,9 @@ def import_items_from_excel(file_obj, organization, user):
     updated = 0
     skipped = []
 
-    for row_number, row in enumerate(rows, start=2):  # row 1 was the header
+    for row_number, row in enumerate(rows, start=2):
         if row is None or all(cell in (None, '') for cell in row):
-            continue  # silently skip fully blank rows
+            continue
 
         values = {}
         for index, field in column_map.items():
@@ -148,10 +112,6 @@ def import_items_from_excel(file_obj, organization, user):
             values.get('track_quantity'),
             default=item.track_quantity if item is not None else True,
         )
-        # Quantity/reorder level/take/borrow don't mean anything for an item
-        # that isn't quantity-tracked (bulk material, location-only) — same
-        # rule the "Add item" form enforces — so a row that turns tracking
-        # off ignores whatever those columns say.
         row_quantity = 0 if not track_quantity else _parse_int(values.get('quantity'), default=0)
 
         if item is None:
@@ -186,10 +146,6 @@ def import_items_from_excel(file_obj, organization, user):
             item.track_quantity = track_quantity
             if values.get('unit'):
                 item.unit = str(values['unit']).strip()
-            # Blank Location/Location Description cells leave the item's
-            # existing values alone rather than clearing them — a row that
-            # only means to restock quantity shouldn't accidentally wipe
-            # out a location that was set some other way.
             previous_location_name = item.location_name
             if location_name:
                 item.location_name = location_name
@@ -220,7 +176,6 @@ def import_items_from_excel(file_obj, organization, user):
 
 
 def build_template_workbook():
-    """Builds an in-memory .xlsx with the expected headers and one example row."""
     workbook = openpyxl.Workbook()
     sheet = workbook.active
     sheet.title = 'Inventory'

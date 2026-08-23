@@ -6,11 +6,6 @@ from .forms import SignUpForm
 
 
 def home(request):
-    """
-    Landing page for signed-out visitors (log in / sign up pitch). If
-    you're already logged in, "Home" just takes you straight to your
-    dashboard — there's nothing else useful to show you first.
-    """
     if request.user.is_authenticated:
         return redirect('dashboard')
     return render(request, 'accounts/home.html')
@@ -34,11 +29,4 @@ def signup(request):
 
 @login_required
 def dashboard(request):
-    """
-    Placeholder home screen after login.
-
-    Once the `organizations` app exists, this becomes: show the user's
-    organization(s), let them switch between them, and (once `inventory`
-    exists) show a stock overview for the active organization.
-    """
     return render(request, 'accounts/dashboard.html')
