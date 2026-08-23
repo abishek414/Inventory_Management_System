@@ -133,6 +133,37 @@ LOGOUT_REDIRECT_URL = 'login'
 
 
 # ---------------------------------------------------------------------------
+# Email (used for the "Forgot password" reset link)
+# ---------------------------------------------------------------------------
+# Defaults to printing emails to the console instead of actually sending
+# them, so "Forgot password" works out of the box for local testing: click
+# "Send reset link", then look at the terminal window running `runserver` —
+# the full email, including the working reset link, is printed right there.
+# There's nothing to configure to test the feature this way.
+#
+# To send real emails (needed once this goes live), set these environment
+# variables before starting the server. For Gmail, DJANGO_EMAIL_HOST_PASSWORD
+# must be a 16-character "App Password" from your Google Account — not your
+# normal Gmail password, Gmail rejects that for this:
+#   DJANGO_EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
+#   DJANGO_EMAIL_HOST=smtp.gmail.com
+#   DJANGO_EMAIL_PORT=587
+#   DJANGO_EMAIL_USE_TLS=True
+#   DJANGO_EMAIL_HOST_USER=youraddress@gmail.com
+#   DJANGO_EMAIL_HOST_PASSWORD=<16-character app password>
+#   DJANGO_DEFAULT_FROM_EMAIL=youraddress@gmail.com
+EMAIL_BACKEND = os.environ.get(
+    'DJANGO_EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend',
+)
+EMAIL_HOST = os.environ.get('DJANGO_EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(os.environ.get('DJANGO_EMAIL_PORT', '25'))
+EMAIL_USE_TLS = os.environ.get('DJANGO_EMAIL_USE_TLS', 'False') == 'True'
+EMAIL_HOST_USER = os.environ.get('DJANGO_EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('DJANGO_EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DJANGO_DEFAULT_FROM_EMAIL', 'no-reply@inventory-system.local')
+
+
+# ---------------------------------------------------------------------------
 # Internationalization
 # ---------------------------------------------------------------------------
 

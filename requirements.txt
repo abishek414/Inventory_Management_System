@@ -3,3 +3,8 @@ Django>=5.2,<6
 
 # Excel bulk-upload support (used from the "inventory" app later on)
 openpyxl>=3.1
+
+# Reads a local .env file for settings like SECRET_KEY and email
+# credentials, so you don't have to set environment variables by hand in
+# every terminal window. See .env.example.
+python-dotenv>=1.0

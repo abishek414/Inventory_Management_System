@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordResetForm, SetPasswordForm, UserCreationForm
 
 from .models import User
 
@@ -41,4 +41,16 @@ class SignUpForm(BootstrapFormMixin, UserCreationForm):
 
 class LoginForm(BootstrapFormMixin, AuthenticationForm):
     """Just Django's built-in login form, styled to match the rest of the site."""
+    pass
+
+
+class PasswordResetRequestForm(BootstrapFormMixin, PasswordResetForm):
+    """The "enter your email" form on the forgot-password page — just Django's
+    built-in form, styled to match the rest of the site."""
+    pass
+
+
+class SetNewPasswordForm(BootstrapFormMixin, SetPasswordForm):
+    """The "choose a new password" form reached from the emailed reset link —
+    just Django's built-in form, styled to match the rest of the site."""
     pass
