@@ -1,22 +1,16 @@
 from django.contrib import admin
 
-from .models import BorrowRecord, Item, Location, StockTransaction
-
-
-@admin.register(Location)
-class LocationAdmin(admin.ModelAdmin):
-    list_display = ('name', 'organization', 'created_at')
-    list_filter = ('organization',)
+from .models import BorrowRecord, Item, StockTransaction
 
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     list_display = (
-        'sku', 'name', 'organization', 'quantity', 'unit', 'location',
+        'sku', 'name', 'organization', 'quantity', 'unit', 'location_name',
         'is_low_stock', 'allow_take', 'allow_borrow',
     )
-    list_filter = ('organization', 'location', 'allow_take', 'allow_borrow')
-    search_fields = ('sku', 'name')
+    list_filter = ('organization', 'allow_take', 'allow_borrow')
+    search_fields = ('sku', 'name', 'location_name')
 
 
 @admin.register(BorrowRecord)

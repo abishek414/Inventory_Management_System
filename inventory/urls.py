@@ -7,7 +7,6 @@ app_name = 'inventory'
 urlpatterns = [
     path('', views.item_list, name='item_list'),
     path('add/', views.add_item, name='add_item'),
-    path('locations/', views.manage_locations, name='manage_locations'),
     path('upload/', views.upload_excel, name='upload_excel'),
     path('upload/template/', views.download_excel_template, name='download_excel_template'),
     path('history/', views.transaction_history, name='transaction_history'),
@@ -17,6 +16,5 @@ urlpatterns = [
     path('<int:item_id>/add-stock/', views.add_stock, name='add_stock'),
     path('<int:item_id>/remove-stock/', views.remove_stock, name='remove_stock'),
     path('<int:item_id>/borrow/', views.borrow_item, name='borrow_item'),
-    path('<int:item_id>/update-location/', views.update_location, name='update_location'),
     path('<int:item_id>/delete/', views.delete_item, name='delete_item'),
 ]

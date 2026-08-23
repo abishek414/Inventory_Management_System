@@ -4,37 +4,23 @@ from django.db import models
 from organizations.models import Organization
 
 
-class Location(models.Model):
-    """
-    A physical place within an organization where stock is kept — e.g. a
-    warehouse, a specific rack, or a shelf. Scoped to one organization, so
-    "Rack 3" at one company is a completely separate row from "Rack 3" at
-    another, even with the same name.
-    """
-
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='locations')
-    name = models.CharField(max_length=150)
-    description = models.CharField(max_length=255, blank=True, help_text='Optional: aisle, building, address, etc.')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        unique_together = ('organization', 'name')
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-
-
 class Item(models.Model):
     """
     One inventory item within an organization. Its current stock quantity
-    and current location live directly on this record — the simplest
-    model that still covers the four core actions from the brief: view,
-    add stock, remove stock / delete the item, and update its location.
+    and current location live directly on this record.
 
-    A history of who changed what and when (needed once we build the
-    "add stock" / "update location" actions in the next piece) is kept
-    in StockTransaction below rather than cluttering this model.
+    Location is plain text on the item itself (location_name /
+    location_description) rather than a shared object multiple items
+    point to — deliberately. Earlier this was a separate Location model
+    that items referenced by foreign key, so renaming "Main Warehouse"
+    changed it for every item stored there at once. That surprised
+    whoever renamed it expecting to affect only the one item they were
+    looking at, so each item now owns its own independent location text
+    instead — set when the item is created, and editable per item from
+    then on, with no effect on any other item.
+
+    A history of who changed what and when is kept in StockTransaction
+    below rather than cluttering this model.
     """
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, related_name='items')
@@ -52,8 +38,11 @@ class Item(models.Model):
     )
     unit = models.CharField(max_length=20, default='pcs', help_text='e.g. pcs, kg, box, litre')
     quantity = models.PositiveIntegerField(default=0)
-    location = models.ForeignKey(
-        Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='items',
+    location_name = models.CharField(
+        max_length=150, blank=True, help_text='Where this item is kept — e.g. "Main Warehouse", "Rack 3".',
+    )
+    location_description = models.CharField(
+        max_length=255, blank=True, help_text='Optional: aisle, building, address, etc.',
     )
     reorder_level = models.PositiveIntegerField(
         default=0,
@@ -127,12 +116,11 @@ class StockTransaction(models.Model):
     quantity_change = models.IntegerField(
         default=0, help_text='Positive for additions, negative for removals, 0 for a pure location change.',
     )
-    previous_location = models.ForeignKey(
-        Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
-    )
-    new_location = models.ForeignKey(
-        Location, on_delete=models.SET_NULL, null=True, blank=True, related_name='+',
-    )
+    # Text snapshots, not a foreign key — location lives directly on Item
+    # now (see Item.location_name), so a history entry just records what
+    # the text was before/after at the time of the change.
+    previous_location_name = models.CharField(max_length=150, blank=True)
+    new_location_name = models.CharField(max_length=150, blank=True)
     performed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='stock_transactions',
     )

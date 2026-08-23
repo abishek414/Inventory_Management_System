@@ -6,10 +6,14 @@ from .forms import SignUpForm
 
 
 def home(request):
-    """Landing page: send logged-in users to their dashboard, others to login."""
+    """
+    Landing page for signed-out visitors (log in / sign up pitch). If
+    you're already logged in, "Home" just takes you straight to your
+    dashboard — there's nothing else useful to show you first.
+    """
     if request.user.is_authenticated:
         return redirect('dashboard')
-    return redirect('login')
+    return render(request, 'accounts/home.html')
 
 
 def signup(request):

@@ -33,10 +33,10 @@
             <tr>
                 <th>Location</th>
                 <td>
-                    {% if item.location %}
-                        {{ item.location.name }}
-                        {% if item.location.description %}
-                            <br><small class="text-muted">{{ item.location.description }}</small>
+                    {% if item.location_name %}
+                        {{ item.location_name }}
+                        {% if item.location_description %}
+                            <br><small class="text-muted">{{ item.location_description }}</small>
                         {% endif %}
                     {% else %}
                         —
@@ -68,7 +68,6 @@
             {% endif %}
             {% if current_membership.role.can_edit_items %}
                 <a href="{% url 'inventory:edit_item' item.id %}" class="btn btn-outline-secondary btn-sm">Edit</a>
-                <a href="{% url 'inventory:update_location' item.id %}" class="btn btn-outline-secondary btn-sm">Move</a>
             {% endif %}
             {% if current_membership.role.can_remove_stock %}
                 <a href="{% url 'inventory:delete_item' item.id %}" class="btn btn-outline-danger btn-sm">Delete</a>

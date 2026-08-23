@@ -7,9 +7,10 @@
     <div class="col-md-6">
         <h1 class="h3 mb-3">Edit {{ item.name }}</h1>
         <p class="text-muted small">
-            Quantity and location aren't editable here — use "+ Stock" / "Take" / "Borrow" to
-            change quantity, and "Move" to change location, so those changes stay in the item's
-            activity log.
+            Location here is just this item's own — changing it has no effect on any other item.
+            Quantity isn't on this form; use "+ Stock" / "Take" / "Borrow" from the inventory list
+            to change it, so those changes stay in the item's activity log (a location change made
+            here is logged too).
         </p>
         <form method="post">
             {% csrf_token %}

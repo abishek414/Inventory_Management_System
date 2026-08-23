@@ -26,8 +26,8 @@
                 <td>{{ tx.item.name }}</td>
                 <td>{{ tx.get_transaction_type_display }}</td>
                 <td>{% if tx.quantity_change > 0 %}+{% endif %}{{ tx.quantity_change }}</td>
-                <td>{{ tx.previous_location|default:"—" }}</td>
-                <td>{{ tx.new_location|default:"—" }}</td>
+                <td>{{ tx.previous_location_name|default:"—" }}</td>
+                <td>{{ tx.new_location_name|default:"—" }}</td>
                 <td>{{ tx.performed_by|default:"—" }}</td>
                 <td>{{ tx.note }}</td>
             </tr>

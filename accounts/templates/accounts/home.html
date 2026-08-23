@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+{# Only ever rendered for signed-out visitors — accounts.views.home sends
+   logged-in users straight to their dashboard instead. #}
+<div class="py-5 text-center">
+    <h1 class="h2 mb-3">Inventory Management System</h1>
+    <p class="text-muted mb-4 mx-auto" style="max-width: 32rem;">
+        Track stock across as many organizations as you need, with your own roles and
+        permissions for each one — who can view, add, remove, move, or bulk-upload
+        inventory is entirely up to you.
+    </p>
+    <a href="{% url 'login' %}" class="btn btn-primary me-2">Log in</a>
+    <a href="{% url 'signup' %}" class="btn btn-outline-secondary">Sign up</a>
+</div>
+{% endblock %}

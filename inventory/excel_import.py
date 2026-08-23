@@ -14,7 +14,7 @@ is blank.
 
 import openpyxl
 
-from .models import Item, Location, StockTransaction
+from .models import Item, StockTransaction
 
 REQUIRED_HEADERS = {'sku', 'name'}
 
@@ -83,6 +83,11 @@ def import_items_from_excel(file_obj, organization, user):
     delivery, not a correction. Every row that touches an item leaves a
     "Bulk Excel import" entry in that item's history, same as any other
     stock change.
+
+    Location is plain text on the item itself, not a shared object — a
+    row's Location/Location Description columns only ever set that one
+    row's item, with no effect on any other item that happens to share
+    the same location name.
     """
     try:
         workbook = openpyxl.load_workbook(file_obj, read_only=True, data_only=True)
@@ -119,7 +124,6 @@ def import_items_from_excel(file_obj, organization, user):
     created = 0
     updated = 0
     skipped = []
-    location_cache = {}
 
     for row_number, row in enumerate(rows, start=2):  # row 1 was the header
         if row is None or all(cell in (None, '') for cell in row):
@@ -135,25 +139,8 @@ def import_items_from_excel(file_obj, organization, user):
             skipped.append((row_number, 'missing SKU or Name'))
             continue
 
-        location = None
         location_name = str(values.get('location') or '').strip()
         location_description = str(values.get('location_description') or '').strip()
-        if location_name:
-            cache_key = location_name.lower()
-            if cache_key in location_cache:
-                location = location_cache[cache_key]
-            else:
-                location, _ = Location.objects.get_or_create(
-                    organization=organization, name=location_name,
-                )
-                location_cache[cache_key] = location
-            # A description in this row updates the location's description —
-            # this runs for both brand-new and already-existing locations, so
-            # re-uploading a spreadsheet with a filled-in description can fix
-            # one that was created blank by an earlier import.
-            if location_description and location.description != location_description:
-                location.description = location_description
-                location.save(update_fields=['description'])
 
         item = Item.objects.filter(organization=organization, sku=sku).first()
 
@@ -176,7 +163,8 @@ def import_items_from_excel(file_obj, organization, user):
                 track_quantity=track_quantity,
                 unit=str(values.get('unit') or 'pcs').strip() or 'pcs',
                 quantity=row_quantity,
-                location=location,
+                location_name=location_name,
+                location_description=location_description,
                 reorder_level=(
                     0 if not track_quantity else _parse_int(values.get('reorder_level'), default=0)
                 ),
@@ -187,7 +175,7 @@ def import_items_from_excel(file_obj, organization, user):
                 item=item,
                 transaction_type=StockTransaction.EXCEL_IMPORT,
                 quantity_change=row_quantity,
-                new_location=location,
+                new_location_name=location_name,
                 performed_by=user,
                 note='Created via Excel import',
             )
@@ -198,8 +186,15 @@ def import_items_from_excel(file_obj, organization, user):
             item.track_quantity = track_quantity
             if values.get('unit'):
                 item.unit = str(values['unit']).strip()
+            # Blank Location/Location Description cells leave the item's
+            # existing values alone rather than clearing them — a row that
+            # only means to restock quantity shouldn't accidentally wipe
+            # out a location that was set some other way.
+            previous_location_name = item.location_name
             if location_name:
-                item.location = location
+                item.location_name = location_name
+            if location_description:
+                item.location_description = location_description
             if not track_quantity:
                 item.reorder_level = 0
                 item.allow_take = False
@@ -214,7 +209,8 @@ def import_items_from_excel(file_obj, organization, user):
                 item=item,
                 transaction_type=StockTransaction.EXCEL_IMPORT,
                 quantity_change=row_quantity,
-                new_location=location,
+                previous_location_name=previous_location_name,
+                new_location_name=item.location_name,
                 performed_by=user,
                 note='Updated via Excel import',
             )

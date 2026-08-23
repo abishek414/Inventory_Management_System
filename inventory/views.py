@@ -6,10 +6,7 @@ from django.utils import timezone
 from organizations.decorators import permission_required
 
 from .excel_import import ExcelImportError, build_template_workbook, import_items_from_excel
-from .forms import (
-    AddStockForm, BorrowForm, EditItemForm, ExcelUploadForm, ItemForm, LocationForm, RemoveStockForm,
-    ReturnForm, UpdateLocationForm,
-)
+from .forms import AddStockForm, BorrowForm, EditItemForm, ExcelUploadForm, ItemForm, RemoveStockForm, ReturnForm
 from .models import BorrowRecord, Item, StockTransaction
 
 
@@ -26,15 +23,18 @@ def _get_org_item_or_404(request, item_id):
 
 @permission_required('can_view_inventory')
 def item_list(request):
-    items = request.current_organization.items.select_related('location')
-    return render(request, 'inventory/item_list.html', {'items': items})
+    items = request.current_organization.items.all()
+    query = request.GET.get('q', '').strip()
+    if query:
+        items = items.filter(name__icontains=query)
+    return render(request, 'inventory/item_list.html', {'items': items, 'query': query})
 
 
 @permission_required('can_view_inventory')
 def item_detail(request, item_id):
     item = _get_org_item_or_404(request, item_id)
     outstanding_borrows = item.borrow_records.filter(returned_at__isnull=True).select_related('borrowed_by')
-    history = item.transactions.select_related('performed_by', 'previous_location', 'new_location')[:50]
+    history = item.transactions.select_related('performed_by')[:50]
     return render(request, 'inventory/item_detail.html', {
         'item': item,
         'outstanding_borrows': outstanding_borrows,
@@ -55,7 +55,7 @@ def add_item(request):
                 item=item,
                 transaction_type=StockTransaction.ADD,
                 quantity_change=item.quantity,
-                new_location=item.location,
+                new_location_name=item.location_name,
                 performed_by=request.user,
                 note='Item created',
             )
@@ -126,51 +126,47 @@ def remove_stock(request, item_id):
 @permission_required('can_edit_items')
 def edit_item(request, item_id):
     """
-    Edits an item's own details (name, SKU, description, unit, reorder
-    level, and whether it's takeable/borrowable). Quantity and location
-    are deliberately not here — see EditItemForm's docstring — those go
-    through Add/Remove stock and Move so they stay in the audit trail.
+    Edits an item's own details — name, SKU, description, unit, location,
+    reorder level, and whether it's takeable/borrowable. Location lives
+    right here now: it's plain text owned by this one item (not a shared
+    object other items also point to), so there's no separate "Move"
+    screen to send people to anymore, and editing it here can never
+    affect any other item.
+
+    Quantity is still deliberately not on this form — see EditItemForm's
+    docstring — that goes through Add/Remove stock so it stays in the
+    audit trail. Location changes still land in that same audit trail
+    (a LOCATION_CHANGE entry) even though the field lives on this general
+    form; the old/new values are captured before saving specifically so
+    that logging is accurate no matter how many other fields changed too.
     """
     item = _get_org_item_or_404(request, item_id)
+    old_location_name = item.location_name
+    old_location_description = item.location_description
 
     if request.method == 'POST':
         form = EditItemForm(request.POST, instance=item)
         if form.is_valid():
             form.save()
+            location_changed = (
+                item.location_name != old_location_name
+                or item.location_description != old_location_description
+            )
+            if location_changed:
+                StockTransaction.objects.create(
+                    item=item,
+                    transaction_type=StockTransaction.LOCATION_CHANGE,
+                    quantity_change=0,
+                    previous_location_name=old_location_name,
+                    new_location_name=item.location_name,
+                    performed_by=request.user,
+                )
             messages.success(request, f'"{item.name}" updated.')
             return redirect('inventory:item_detail', item_id=item.id)
     else:
         form = EditItemForm(instance=item)
 
     return render(request, 'inventory/edit_item.html', {'form': form, 'item': item})
-
-
-@permission_required('can_edit_items')
-def update_location(request, item_id):
-    item = _get_org_item_or_404(request, item_id)
-    org = request.current_organization
-
-    if request.method == 'POST':
-        form = UpdateLocationForm(request.POST, organization=org)
-        if form.is_valid():
-            old_location = item.location
-            new_location = form.cleaned_data['location']
-            item.location = new_location
-            item.save(update_fields=['location', 'updated_at'])
-            StockTransaction.objects.create(
-                item=item,
-                transaction_type=StockTransaction.LOCATION_CHANGE,
-                quantity_change=0,
-                previous_location=old_location,
-                new_location=new_location,
-                performed_by=request.user,
-            )
-            messages.success(request, f'"{item.name}" moved to {new_location or "no location"}.')
-            return redirect('inventory:item_list')
-    else:
-        form = UpdateLocationForm(initial={'location': item.location}, organization=org)
-
-    return render(request, 'inventory/update_location.html', {'form': form, 'item': item})
 
 
 @permission_required('can_remove_stock')
@@ -274,25 +270,6 @@ def return_item(request, record_id):
     return render(request, 'inventory/return_form.html', {'form': form, 'record': record})
 
 
-@permission_required('can_edit_items')
-def manage_locations(request):
-    org = request.current_organization
-
-    if request.method == 'POST':
-        form = LocationForm(request.POST)
-        if form.is_valid():
-            location = form.save(commit=False)
-            location.organization = org
-            location.save()
-            messages.success(request, f'Location "{location.name}" added.')
-            return redirect('inventory:manage_locations')
-    else:
-        form = LocationForm()
-
-    locations = org.locations.all()
-    return render(request, 'inventory/manage_locations.html', {'form': form, 'locations': locations})
-
-
 @permission_required('can_upload_excel')
 def upload_excel(request):
     org = request.current_organization
@@ -333,6 +310,6 @@ def download_excel_template(request):
 def transaction_history(request):
     transactions = StockTransaction.objects.filter(
         item__organization=request.current_organization,
-    ).select_related('item', 'previous_location', 'new_location', 'performed_by')[:200]
+    ).select_related('item', 'performed_by')[:200]
 
     return render(request, 'inventory/transaction_history.html', {'transactions': transactions})
