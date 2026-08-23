@@ -97,9 +97,17 @@ def add_stock(request, item_id):
 
 @permission_required('can_remove_stock')
 def remove_stock(request, item_id):
+    """
+    This is the "Take" action — the only button that ever links here (see
+    item_list.html / item_detail.html). It's still named remove_stock and
+    still logs a REMOVE transaction internally, matching the
+    can_remove_stock permission and StockTransaction.REMOVE type, but
+    everything a person actually reads on screen says "Take" — since
+    that's the only thing this view is ever used for.
+    """
     item = _get_org_item_or_404(request, item_id)
     if not item.track_quantity:
-        messages.error(request, f'"{item.name}" isn\'t quantity-tracked — there\'s no stock count to remove from.')
+        messages.error(request, f'"{item.name}" isn\'t quantity-tracked — there\'s no stock count to take from.')
         return redirect('inventory:item_detail', item_id=item.id)
 
     if request.method == 'POST':
@@ -115,12 +123,12 @@ def remove_stock(request, item_id):
                 performed_by=request.user,
                 note=form.cleaned_data['note'],
             )
-            messages.success(request, f'Removed {quantity} {item.unit} from "{item.name}" (new total: {item.quantity}).')
+            messages.success(request, f'Took {quantity} {item.unit} of "{item.name}" (new total: {item.quantity}).')
             return redirect('inventory:item_list')
     else:
         form = RemoveStockForm(item=item)
 
-    return render(request, 'inventory/stock_form.html', {'form': form, 'item': item, 'action': 'Remove'})
+    return render(request, 'inventory/stock_form.html', {'form': form, 'item': item, 'action': 'Take'})
 
 
 @permission_required('can_edit_items')

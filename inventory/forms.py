@@ -96,8 +96,12 @@ class AddStockForm(BootstrapFormMixin, forms.Form):
 
 
 class RemoveStockForm(BootstrapFormMixin, forms.Form):
-    quantity = forms.IntegerField(min_value=1, label='Quantity to remove')
-    note = forms.CharField(max_length=255, required=False, help_text='Optional, e.g. "damaged / written off".')
+    """The "Take" form — labels say "take" since that's the only action this
+    form is ever used for, even though the class/field names underneath
+    still say "remove" to match can_remove_stock and StockTransaction.REMOVE."""
+
+    quantity = forms.IntegerField(min_value=1, label='Quantity to take')
+    note = forms.CharField(max_length=255, required=False, help_text='Optional, e.g. "used on Job #42" or "damaged / written off".')
 
     def __init__(self, *args, item=None, **kwargs):
         self.item = item
@@ -107,7 +111,7 @@ class RemoveStockForm(BootstrapFormMixin, forms.Form):
         quantity = self.cleaned_data['quantity']
         if self.item is not None and quantity > self.item.quantity:
             raise forms.ValidationError(
-                f'Only {self.item.quantity} {self.item.unit} in stock — cannot remove {quantity}.'
+                f'Only {self.item.quantity} {self.item.unit} in stock — cannot take {quantity}.'
             )
         return quantity
 
